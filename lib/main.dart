@@ -3,6 +3,7 @@ import 'screens/welcome_screen.dart';
 import 'screens/sign_up.dart';
 import 'screens/sign_in.dart';
 import 'screens/dashboard.dart';
+import 'screens/confirm_email.dart';
 
 void main() {
   runApp(const ProjectManagerApp());
@@ -23,7 +24,8 @@ class ProjectManagerApp extends StatelessWidget {
         '/welcome': (context) => WelcomeScreen(),
         '/sign-up': (context) => SignUpScreen(),
         '/sign-in': (context) => SignInScreen(),
-        '/dashboard': (context) => BoardScreen(),
+        '/dashboard': (context) => DashboardScreen(),
+        '/confirm-email': (context) => ConfirmEmailScreen(),
       },
     );
   }

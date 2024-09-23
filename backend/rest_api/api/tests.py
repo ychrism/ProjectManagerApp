@@ -71,6 +71,11 @@ class BaseAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_jwt}')
 
 class TheUserAPITest(BaseAPITestCase):
+    def test_signup(self):
+        response = self.client.post(reverse('signup'), self.user_creds)
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        
     def test_login_success(self):
         for creds in [self.user_creds, self.admin_creds]:
             response = self.client.post(reverse('get_token'), {
@@ -125,6 +130,7 @@ class BoardAPITest(BaseAPITestCase):
             }
             response = self.client.post(reverse('boards-list'), data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
 
     def test_board_retrieval_as_authenticated_user_not_member(self):
         self.authenticate_as_user()
@@ -157,6 +163,18 @@ class BoardAPITest(BaseAPITestCase):
             }
             response = self.client.post(reverse('boards-list'), data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_board_as_admin(self):
+        self.authenticate_as_admin()
+        with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
+            data = {
+                'start_date': timezone.make_aware(datetime(2024, 2, 1, 0, 0, 0)),
+                'due_date': timezone.make_aware(datetime(2024, 2, 20, 0, 0, 0)),
+                'description': 'Another test board',
+                'progress': 1,
+            }
+            response = self.client.patch(reverse('boards-detail', args=[self.board_id]), data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_board_as_admin(self):
         self.authenticate_as_admin()

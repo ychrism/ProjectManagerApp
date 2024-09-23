@@ -6,12 +6,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db import IntegrityError
 
 
 
 class SignInView(TokenObtainPairView):
     serializer_class = SignInSerializer
-
 
 class SignupView(generics.CreateAPIView):
     queryset = TheUser.objects.all()
@@ -23,11 +23,17 @@ class SignupView(generics.CreateAPIView):
         password = request.data.get('password')
         email = request.data.get('email')
 
-        user = TheUser.objects.create_user(first_name=first_name, last_name=last_name, password=password, email=email)
-        user.save()
+        try:
+            user = TheUser.objects.create_user(first_name=first_name, last_name=last_name, password=password, email=email)
+            user.save()
 
-        return Response({"msg": "User created successfully"}, status=status.HTTP_201_CREATED)
-
+            return Response({"msg": "User created successfully"}, status=status.HTTP_201_CREATED)
+        except IntegrityError as e:
+            if 'email' in str(e):
+                return Response({"err": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "Failed to create user"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class BoardViewSet(viewsets.ModelViewSet):

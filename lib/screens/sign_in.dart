@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api.dart';
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -9,14 +10,31 @@ class SignInScreenState extends State<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final Api _apiService = Api();
 
-  void _signIn() {
+  void _signIn() async{
     final email = _emailController.text;
     final password = _passwordController.text;
 
     // Handle sign-in logic here (API authentication)
+    try {
+      final result = await _apiService.login(
+        email: email,
+        password: password,
+      );
 
-    Navigator.pushNamed(context, '/dashboard');
+      if (result['success']) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'])),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred. Please contact administrator.')),
+      );
+    }
   }
 
   @override

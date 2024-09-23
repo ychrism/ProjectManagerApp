@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:email_validator/email_validator.dart';
+import '../services/api.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -16,6 +17,8 @@ class SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  final Api _api = Api();
+
   String? _passwordError;
 
   bool _isPasswordValid(String password) {
@@ -27,10 +30,32 @@ class SignUpScreenState extends State<SignUpScreen> {
     return true;
   }
 
-  void _signUp() {
+  void _signUp() async {
     if (_formKey.currentState!.validate()) {
-      // Add logic to make API call to your backend for sign-up
-      Navigator.pushNamed(context, '/confirm-email');
+      try {
+        final result = await _api.signUp(
+          firstName: _firstNameController.text,
+          lastName: _lastNameController.text,
+          email: _emailController.text,
+          password: _passwordController.text
+        );
+
+        if (result['success']) {
+          Navigator.pushNamed(context, '/confirm-email');
+        } else {
+          setState(() {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['error'])),
+            );
+          });
+        }
+      } catch (e) {
+        setState(() {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('An error occurred. Please try again.')),
+          );
+        });
+      }
     }
   }
 

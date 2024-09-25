@@ -99,7 +99,15 @@ class Api {
   }
 
   Future<Map<String, dynamic>> updateBoard({required String boardId, required Map<String, dynamic> updates}) async {
-    return await patch('/boards/$boardId', updates);
+    try {
+      final response = await patch('/boards/$boardId', updates);
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   Future<void> deleteBoard({required String boardId}) async {
@@ -112,20 +120,36 @@ class Api {
   }
 
   Future<Map<String, dynamic>> createCard({required String title, required String priority, required DateTime startDate, required DateTime dueDate, required String description, required String board_id, required String status, required List<String> emails}) async {
-    return await post('/cards/', {
-      'title': title,
-      'priority': priority,
-      'start_date': startDate,
-      'due_date': dueDate,
-      'description': description,
-      'board': board_id,
-      'status': status,
-      'emails': emails,
-    });
+    try {
+      final response = await post('/cards/', {
+        'title': title,
+        'priority': priority,
+        'start_date': startDate,
+        'due_date': dueDate,
+        'description': description,
+        'board': board_id,
+        'status': status,
+        'emails': emails,
+      });
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   Future<Map<String, dynamic>> updateCard({required String cardId, required Map<String, dynamic> updates}) async {
-    return await put('/cards/$cardId', updates);
+    try {
+      final response = await put('/cards/$cardId', updates);
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   Future<Map<String, dynamic>> updateCardStatus({required String cardId, required String newStatus}) async {

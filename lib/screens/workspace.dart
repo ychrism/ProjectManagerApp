@@ -60,34 +60,50 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
       builder: (BuildContext context) {
         return Builder(
           builder: (BuildContext innerContext) {
-            return Scaffold(
-              backgroundColor: Colors.transparent,
-              body: AlertDialog(
-                backgroundColor: Colors.grey[800],
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('New Board', style: TextStyle(color: Colors.white)),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.white),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                ),
-                content: Container(
+            return AlertDialog(
+              backgroundColor: Colors.grey[800],
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('New Board', style: TextStyle(color: Colors.white)),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Container(
                   width: double.maxFinite,
                   child: AddBoardForm(
-                    onBoardCreated: (success) {
-                      if (success) {
-                        Navigator.of(context).pop();
-                        _fetchBoards(); // Refresh the board list
+                    onSubmit: (boardData) async {
+                      try {
+                        final result = await _api.createBoard(
+                          name: boardData['name'],
+                          startDate: boardData['startDateTime'],
+                          dueDate: boardData['dueDateTime'],
+                          description: boardData['description'],
+                          pic: boardData['pic'],
+                        );
+
+                        if (result['success']) {
+                          Navigator.of(context).pop();
+                          _showSnackBar('Board created successfully');
+                          setState(() {
+                            _fetchBoards(); // Refresh the board list
+                          });
+                        } else {
+                          _showSnackBar(result['error']);
+                        }
+                      } catch (e) {
+                        _showSnackBar('An error occurred. Please try again.');
                       }
                     },
                   ),
                 ),
-              ),
+              )
             );
           },
         );
@@ -187,9 +203,9 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
 }
 
 class AddBoardForm extends StatefulWidget {
-  final Function(bool) onBoardCreated;
+  final Function(Map<String, dynamic>) onSubmit;
 
-  const AddBoardForm({Key? key, required this.onBoardCreated}) : super(key: key);
+  const AddBoardForm({Key? key, required this.onSubmit}) : super(key: key);
 
   @override
   AddBoardFormState createState() => AddBoardFormState();
@@ -202,8 +218,6 @@ class AddBoardFormState extends State<AddBoardForm> {
   final _imageController = TextEditingController();
   final _startDateTimeController = TextEditingController();
   final _dueDateTimeController = TextEditingController();
-
-  final Api _api = Api();
 
   DateTime _startDateTime = DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
   DateTime _dueDateTime = DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
@@ -282,26 +296,21 @@ class AddBoardFormState extends State<AddBoardForm> {
     }
   }
 
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      widget.onSubmit({
+        'name': _nameController.text,
+        'startDateTime': _startDateTime,
+        'dueDateTime': _dueDateTime,
+        'description': _descriptionController.text,
+        'pic': _imageFile,
+      });
+    }
+  }
+
   void _addBoard() async {
     if (_formKey.currentState!.validate()) {
-      try {
-        final result = await _api.createBoard(
-          name: _nameController.text,
-          startDate: _startDateTime,
-          dueDate: _dueDateTime,
-          description: _descriptionController.text,
-          pic: _imageFile,
-        );
 
-        if (result['success']) {
-          _showSnackBar('Board created successfully');
-          widget.onBoardCreated(true);
-        } else {
-          _showSnackBar(result['error']);
-        }
-      } catch (e) {
-        _showSnackBar('An error occurred. Please try again.');
-      }
     }
   }
 
@@ -313,80 +322,78 @@ class AddBoardFormState extends State<AddBoardForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTextFormField(
-              controller: _nameController,
-              labelText: 'Name',
-              prefixIcon: Icon(Icons.title, color: Colors.white),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-            ),
-            _buildTextFormField(
-              controller: _descriptionController,
-              labelText: 'Description',
-              prefixIcon: Icon(Icons.description, color: Colors.white),
-              maxLines: null,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a description';
-                }
-                return null;
-              },
-            ),
-            _buildTextFormField(
-              controller: _imageController,
-              labelText: 'Background Image',
-              prefixIcon: Icon(Icons.image, color: Colors.white),
-              suffixIcon: Icon(Icons.attach_file, color: Colors.white),
-              onTap: _pickImage,
-              readOnly: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please choose an image file for your board';
-                }
-                if (!isValidFileExtension(value)) {
-                  return 'Please choose a PNG or JPEG image file';
-                }
-                return null;
-              },
-            ),
-            _buildTextFormField(
-              readOnly: true,
-              controller: _startDateTimeController,
-              labelText: 'Start DateTime',
-              prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
-              onTap: () => _pickStartDateTime(context),
-            ),
-            _buildTextFormField(
-              controller: _dueDateTimeController,
-              labelText: 'Due DateTime',
-              prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
-              readOnly: true,
-              onTap: () => _pickDueDateTime(context),
-            ),
-            SizedBox(height: 50),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _addBoard,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text('Create Board'),
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTextFormField(
+            controller: _nameController,
+            labelText: 'Name',
+            prefixIcon: Icon(Icons.title, color: Colors.white),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a name';
+              }
+              return null;
+            },
+          ),
+          _buildTextFormField(
+            controller: _descriptionController,
+            labelText: 'Description',
+            prefixIcon: Icon(Icons.description, color: Colors.white),
+            maxLines: null,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a description';
+              }
+              return null;
+            },
+          ),
+          _buildTextFormField(
+            controller: _imageController,
+            labelText: 'Background Image',
+            prefixIcon: Icon(Icons.image, color: Colors.white),
+            suffixIcon: Icon(Icons.attach_file, color: Colors.white),
+            onTap: _pickImage,
+            readOnly: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please choose an image file for your board';
+              }
+              if (!isValidFileExtension(value)) {
+                return 'Please choose a PNG or JPEG image file';
+              }
+              return null;
+            },
+          ),
+          _buildTextFormField(
+            readOnly: true,
+            controller: _startDateTimeController,
+            labelText: 'Start DateTime',
+            prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
+            onTap: () => _pickStartDateTime(context),
+          ),
+          _buildTextFormField(
+            controller: _dueDateTimeController,
+            labelText: 'Due DateTime',
+            prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
+            readOnly: true,
+            onTap: () => _pickDueDateTime(context),
+          ),
+          SizedBox(height: 50),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submitForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
               ),
+              child: Text('Create Board'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

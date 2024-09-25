@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import IntegrityError
+from rest_framework.exceptions import ValidationError
 
 
 
@@ -41,29 +42,66 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
 
+    def create(self, request, *args, **kwargs):
+        try:
+            board = super().create(request, *args, **kwargs)
+            return Response(BoardSerializer(board.data).data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            if 'name' in str(e):
+                return Response({"err": "Board name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "Failed to create board"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            pass
+
+    def update(self, request, *args, **kwargs):
+        try:
+            response = super().update(request, *args, **kwargs)
+            return Response(response.data)
+        except ValidationError as e:
+            if 'name' in str(e):
+                return Response({"err": "Board name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class CardViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrCardMember]
     queryset = Card.objects.all()
     serializer_class = CardSerializer
 
-    def perform_create(self, serializer):
-        card = serializer.save()
-        self.update_board_members(card)
+    def create(self, request, *args, **kwargs):
+        try:
+            card = super().create(request, *args, **kwargs)
+            self.update_board_members(card.data)
+            return Response(CardSerializer(card.data).data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            if 'title' in str(e):
+                return Response({"err": "Card title already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "Failed to create card"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def perform_update(self, serializer):
-        card = serializer.instance
-        old_members = set(card.members.all())
-        
-        # Only update the fields that were actually included in the request data
-        update_fields = serializer.validated_data.keys()
-        card = serializer.save()
-        
-        # If 'emails' wasn't in the update_fields, restore the old members
-        if 'emails' not in update_fields:
-            card.members.set(old_members)
-        
-        self.update_board_members(card)
+    def update(self, request, *args, **kwargs):
+        try:
+            card = self.get_object()
+            old_members = set(card.members.all())
+            update_fields = request.data.keys()
+            
+            updated_card = super().update(request, *args, **kwargs)
+            
+            if 'emails' not in update_fields:
+                updated_card.data.members.set(old_members)
+            
+            self.update_board_members(updated_card.data)
+            return Response(CardSerializer(updated_card.data).data)
+        except ValidationError as e:
+            if 'title' in str(e):
+                return Response({"err": "Card title already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": "Failed to update card"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
     def update_board_members(self, card):
         board = card.board
@@ -78,6 +116,7 @@ class CardViewSet(viewsets.ModelViewSet):
         # Update the board's members
         board.members.set(card_members)
         board.save()
+
 
 
 class TheUserViewSet(viewsets.ModelViewSet):

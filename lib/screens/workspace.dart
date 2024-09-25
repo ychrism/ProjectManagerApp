@@ -9,18 +9,50 @@ import 'package:path/path.dart' as path;
 import '../services/api.dart';
 
 class WorkspaceScreen extends StatefulWidget {
-  const WorkspaceScreen({Key? key}) : super(key: key);
+  final Function(int) onBoardSelected;
+
+  const WorkspaceScreen({Key? key, required this.onBoardSelected}) : super(key: key);
 
   @override
   WorkspaceScreenState createState() => WorkspaceScreenState();
 }
 
 class WorkspaceScreenState extends State<WorkspaceScreen> {
-  final List<Map<String, String>> boards = [
-    {'name': 'Project Alpha', 'image': 'assets/project_alpha.jpg'},
-    {'name': 'Marketing Plan', 'image': 'assets/marketing_plan.jpg'},
-    // Add more boards as needed
-  ];
+  final Api _api = Api();
+  List<Map<String, dynamic>> boards = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestPermissions();
+    _fetchBoards();
+  }
+
+  Future<void> _requestPermissions() async {
+    var status = await Permission.photos.status;
+    if (status.isDenied) {
+      await Permission.photos.request();
+    }
+  }
+
+  Future<void> _fetchBoards() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final fetchedBoards = await _api.fetchBoards();
+      setState(() {
+        boards = fetchedBoards;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      _showSnackBar('Failed to fetch boards: ${e.toString()}');
+    }
+  }
 
   void _showAddBoardPopup(BuildContext context) {
     showDialog(
@@ -50,9 +82,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                     onBoardCreated: (success) {
                       if (success) {
                         Navigator.of(context).pop();
-                        setState(() {
-                          // Refresh your board list here
-                        });
+                        _fetchBoards(); // Refresh the board list
                       }
                     },
                   ),
@@ -65,18 +95,10 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 
-
-  @override
-  void initState() {
-    super.initState();
-    _requestPermissions();
-  }
-
-  Future<void> _requestPermissions() async {
-    var status = await Permission.photos.status;
-    if (status.isDenied) {
-      await Permission.photos.request();
-    }
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -103,9 +125,11 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
         backgroundColor: Colors.black,
         automaticallyImplyLeading: false,
       ),
-      body: Stack(  //Use a Stack to position the FAB
+      body: Stack(
         children: [
-          Padding(
+          isLoading
+              ? Center(child: CircularProgressIndicator())
+              : Padding(
             padding: const EdgeInsets.all(16.0),
             child: GridView.builder(
               itemCount: boards.length,
@@ -115,14 +139,10 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                 mainAxisSpacing: 10,
               ),
               itemBuilder: (context, index) {
+                final board = boards[index];
                 return GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BoardScreen(),
-                      ),
-                    );
+                    widget.onBoardSelected(board['id']);
                   },
                   child: Column(
                     children: [
@@ -130,7 +150,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                         child: Container(
                           decoration: BoxDecoration(
                             image: DecorationImage(
-                              image: AssetImage(boards[index]['image']!),
+                              image: NetworkImage(board['pic']),
                               fit: BoxFit.cover,
                             ),
                             borderRadius: BorderRadius.circular(8),
@@ -139,7 +159,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        boards[index]['name']!,
+                        board['name'],
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -151,8 +171,8 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
           Positioned(
             bottom: 16.0,
             right: 16.0,
-            child: FloatingActionButton.extended( // Use FloatingActionButton.extended
-              onPressed: (){
+            child: FloatingActionButton.extended(
+              onPressed: () {
                 _showAddBoardPopup(context);
               },
               backgroundColor: Colors.lightBlue,
@@ -165,7 +185,6 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 }
-
 
 class AddBoardForm extends StatefulWidget {
   final Function(bool) onBoardCreated;

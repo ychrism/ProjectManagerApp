@@ -13,6 +13,7 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  int? _lastSelectedBoardId;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -20,14 +21,23 @@ class DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  void updateLastSelectedBoard(int boardId) {
+    setState(() {
+      _lastSelectedBoardId = boardId;
+      _selectedIndex = 1;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack( // Use IndexedStack to switch between screens
+      body: IndexedStack(
         index: _selectedIndex,
         children: [
-          WorkspaceScreen(),
-          BoardScreen(),
+          WorkspaceScreen(onBoardSelected: updateLastSelectedBoard),
+          _lastSelectedBoardId != null
+              ? BoardScreen(boardId: _lastSelectedBoardId!)
+              : Center(child: Text('No board selected')),
           ChatScreen(),
           SettingsScreen(),
         ],

@@ -39,7 +39,6 @@ class ProjectManagerApp extends StatelessWidget {
         '/sign-up': (context) => const SignUpScreen(),
         '/sign-in': (context) => SignInScreen(),
         '/dashboard': (context) => const DashboardScreen(),
-        '/board': (context) => const BoardScreen(),
         '/confirm-email': (context) => const ConfirmEmailScreen(),
       },
     );

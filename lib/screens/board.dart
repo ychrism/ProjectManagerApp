@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
 class BoardScreen extends StatelessWidget {
-  const BoardScreen({super.key});
+  final int boardId;
+
+  const BoardScreen({super.key, required this.boardId});
 
   @override
   Widget build(BuildContext context) {
+    // Use the boardId to fetch and display the specific board data
     return Scaffold(
       appBar: AppBar(
         elevation: 50,
         title: Row(
           children: [
-            Text('Board', style: TextStyle(color: Colors.white),),
+            Text('Board $boardId', style: TextStyle(color: Colors.white),),
             Icon(Icons.arrow_drop_down, color: Colors.white,),
           ],
         ),
@@ -30,7 +33,6 @@ class BoardScreen extends StatelessWidget {
           ),
         ],
       ),
-
     );
   }
 

@@ -63,6 +63,22 @@ class Api {
     return await get('/boards/$boardId');
   }
 
+  Future<List<Map<String, dynamic>>> fetchBoards() async {
+    try {
+      final response = await get('/boards/');
+      if (response is List) {
+        return response.cast<Map<String, dynamic>>();
+      } else {
+        throw ApiException('Unexpected response format');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to fetch boards');
+    }
+  }
+
   Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required File pic}) async {
     try {
       final response = await post('/boards/', {

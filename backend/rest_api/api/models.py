@@ -50,7 +50,7 @@ def get_due_date(weeks=1):
 
 class Board(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(unique=True, max_length=100)
     start_date = models.DateTimeField(default=timezone.now)
     due_date = models.DateTimeField(default=get_due_date(weeks=10))
     description = models.TextField(default='This is a new board')
@@ -78,7 +78,7 @@ class CardStatus(models.TextChoices):
 
 class Card(models.Model):
     id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=255)
+    title = models.CharField(unique=True, max_length=255)
     priority = models.CharField(
         max_length=10,
         choices=CardPriority.choices,

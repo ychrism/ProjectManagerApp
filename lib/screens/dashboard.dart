@@ -1,70 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:project_manager_app/screens/workspace.dart';
 import 'board.dart';
+import 'chat.dart';
+import 'settings.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   DashboardScreenState createState() => DashboardScreenState();
 }
 
 class DashboardScreenState extends State<DashboardScreen> {
-  final List<Map<String, String>> boards = [
-    {'name': 'Project Alpha', 'image': 'assets/project_alpha.jpg'},
-    {'name': 'Marketing Plan', 'image': 'assets/marketing_plan.jpg'},
-    // Add more boards as needed
-  ];
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: Colors.blue,
+      body: IndexedStack( // Use IndexedStack to switch between screens
+        index: _selectedIndex,
+        children: [
+          WorkspaceScreen(),
+          BoardScreen(),
+          ChatScreen(),
+          SettingsScreen(),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          itemCount: boards.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-          ),
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () {
-                // Navigate to BoardScreen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BoardScreen(boardName: boards[index]['name']),
-                  ),
-                );
-              },
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage(boards[index]['image']!),
-                          fit: BoxFit.cover,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    boards[index]['name']!,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.workspaces_sharp), label: 'Workspaces'),
+          BottomNavigationBarItem(icon: Icon(Icons.view_kanban), label: 'Boards'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chats'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+        ],
       ),
     );
   }

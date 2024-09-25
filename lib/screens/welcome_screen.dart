@@ -29,7 +29,7 @@ class WelcomeScreen extends StatelessWidget {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/sign-up');
+                  Navigator.pushReplacementNamed(context, '/sign-up');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black, // This sets the background color

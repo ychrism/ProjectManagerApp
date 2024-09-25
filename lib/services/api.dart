@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'navigation.dart';
 
 const baseApiUrl =  'http://10.0.2.2:8000/api';
 
@@ -53,6 +55,7 @@ class Api {
   Future<void> logout() async {
     await _storage.delete(key: 'access');
     await _storage.delete(key: 'refresh');
+    await navigationService.replaceTo('/sign-in');
   }
 
   // Board operations
@@ -60,15 +63,23 @@ class Api {
     return await get('/boards/$boardId');
   }
 
-  Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required String progress, required FileImage pic}) async {
-    return await post('/boards/', {
-      'name': name,
-      'start_date': startDate,
-      'due_date': dueDate,
-      'description': description,
-      'progress': progress,
-      'pic': pic,
-    });
+  Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required File pic}) async {
+    try {
+      final response = await post('/boards/', {
+        'name': name,
+        'start_date': startDate,
+        'due_date': dueDate,
+        'description': description,
+        'progress': 0,
+        'pic': pic,
+      });
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   Future<Map<String, dynamic>> updateBoard({required String boardId, required Map<String, dynamic> updates}) async {
@@ -138,29 +149,51 @@ class Api {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
-
-    http.Response response;
     var url = Uri.parse('$baseUrl$endpoint');
 
     try {
-      switch (method) {
-        case 'GET':
-          response = await _client.get(url, headers: headers);
-          break;
-        case 'POST':
-          response = await _client.post(url, headers: headers, body: json.encode(body));
-          break;
-        case 'PUT':
-          response = await _client.put(url, headers: headers, body: json.encode(body));
-          break;
-        case 'PATCH':
-          response = await _client.patch(url, headers: headers, body: json.encode(body));
-          break;
-        case 'DELETE':
-          response = await _client.delete(url, headers: headers);
-          break;
-        default:
-          throw ApiException('Unsupported HTTP method');
+      http.Response response;
+      if (method != 'GET' && body != null && body.values.any((v) => v is File)) {
+        // Handle multipart request for methods with file upload
+        var request = http.MultipartRequest(method, url);
+        request.headers.addAll(headers);
+
+        body.forEach((key, value) {
+          if (value is File) {
+            request.files.add(http.MultipartFile(
+              key,
+              value.readAsBytes().asStream(),
+              value.lengthSync(),
+              filename: value.path.split('/').last,
+            ));
+          } else {
+            request.fields[key] = value.toString();
+          }
+        });
+
+        var streamedResponse = await request.send();
+        response = await http.Response.fromStream(streamedResponse);
+      } else {
+        // Handle regular requests
+        switch (method) {
+          case 'GET':
+            response = await _client.get(url, headers: headers);
+            break;
+          case 'POST':
+            response = await _client.post(url, headers: headers, body: json.encode(body));
+            break;
+          case 'PUT':
+            response = await _client.put(url, headers: headers, body: json.encode(body));
+            break;
+          case 'PATCH':
+            response = await _client.patch(url, headers: headers, body: json.encode(body));
+            break;
+          case 'DELETE':
+            response = await _client.delete(url, headers: headers);
+            break;
+          default:
+            throw ApiException('Unsupported HTTP method');
+        }
       }
 
       if (response.statusCode == 401) {
@@ -190,7 +223,7 @@ class Api {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('An error occurred: $e');
+      throw ApiException('An error occurred. Please contact the administrator.');
     }
   }
 

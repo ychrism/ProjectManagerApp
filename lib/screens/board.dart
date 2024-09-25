@@ -1,165 +1,195 @@
 import 'package:flutter/material.dart';
 
 class BoardScreen extends StatelessWidget {
-  final String? boardName;
-
-  BoardScreen({this.boardName});
+  const BoardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(boardName ?? 'Board'),
-        backgroundColor: Colors.blue,
+        elevation: 50,
+        title: Row(
+          children: [
+            Text('Board', style: TextStyle(color: Colors.white),),
+            Icon(Icons.arrow_drop_down, color: Colors.white,),
+          ],
+        ),
+        actions: [
+          IconButton(icon: Icon(Icons.search, color: Colors.white,), onPressed: () {}),
+          IconButton(icon: Icon(Icons.filter_list_alt, color: Colors.white,), onPressed: () {}),
+        ],
+        backgroundColor: Colors.black,
+        automaticallyImplyLeading: true,
       ),
-      body: PageView(
-        scrollDirection: Axis.horizontal,
+      body: Column(
         children: [
-          _buildTaskColumn('To-Do', Colors.black),
-          _buildTaskColumn('Doing', Colors.black),
-          _buildTaskColumn('Blocked', Colors.black),
-          _buildTaskColumn('Done', Colors.black),
+          _buildMemberAvatars(),
+          _buildProgressBar(),
+          Expanded(
+            child: _buildBoardList(),
+          ),
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Create new card logic
-        },
-        child: const Icon(Icons.add),
-        backgroundColor: Colors.blue,
-        heroTag: 'addCard',
+    );
+  }
+
+  Widget _buildMemberAvatars() {
+    return Container(
+      height: 50,
+      width: 400,
+      //margin: EdgeInsets.only(right: 20),
+      child: Stack(
+        children: [
+          Positioned(left: 10, child: _buildAvatar(Colors.blue)),
+          Positioned(left: 40, child: _buildAvatar(Colors.green)),
+          Positioned(left: 70, child: _buildAvatar(Colors.orange)),
+          Positioned(left: 100, child: _buildAvatar(Colors.purple)),
+          Positioned(left: 130, child: _buildAvatar(Colors.grey, label: '+5')),
+        ],
       ),
     );
   }
 
-  Widget _buildTaskColumn(String title, Color color) {
-    return Padding(
-      padding: const EdgeInsets.all(30.5),
-      child: Container(
-        padding: const EdgeInsets.only(left: 15, right: 15),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 15),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            const SizedBox(height: 15),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildTaskCard('Task 1', 'High', '2024-09-30', ["Yves MEDAGBE", "François MEDAGBE"]),
-                  _buildTaskCard('Task 2', 'Medium', '2024-10-05', ["Yves MEDAGBE", "François MEDAGBE"]),
-                ],
+  Widget _buildAvatar(Color color, {String? label}) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: CircleAvatar(
+        backgroundColor: color,
+        child: label != null ? Text(label, style: TextStyle(color: Colors.white)) : null,
+      ),
+    );
+  }
+
+
+  Widget _buildProgressBar() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            'Overall',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+          SizedBox(height: 4),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              LinearProgressIndicator(
+                value: 0.7,
+                backgroundColor: Colors.grey[200],
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                minHeight: 16,
+                borderRadius: BorderRadius.circular(18),
               ),
-            ),
-          ],
-        ),
+              Text('70%', style: TextStyle(fontSize: 12, color: Colors.white)),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTaskCard(String taskTitle, String priority, String dueDate, List<String> members) {
-    // Function to determine the due date color (red if imminent, otherwise gray)
-    Color _getDueDateColor(String dueDate) {
-      return DateTime.parse(dueDate).isBefore(DateTime.now()) ? Colors.red : Colors.green;
-    }
+  Widget _buildBoardList() {
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      children: [
+        _buildBoardColumn('TODO', Colors.black, 4),
+        _buildBoardColumn('DOING', Colors.black, 3),
+        _buildBoardColumn('BLOCKED', Colors.black, 2),
+        _buildBoardColumn('DONE', Colors.black, 5),
+      ],
+    );
+  }
 
-    // Limit avatars to a maximum of 6, with extra indicator if more than 6
-    List<Widget> _buildMemberAvatars(List<String> members) {
-      List<Widget> avatars = members.take(6).map((member) {
-        return CircleAvatar(
-          radius: 12,
-          backgroundColor: Colors.blue,
-          child: Text(
-            member[0], // Use the first letter as the avatar's label
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        );
-      }).toList();
-
-      if (members.length > 6) {
-        avatars.add(CircleAvatar(
-          radius: 12,
-          backgroundColor: Colors.grey,
-          child: const Text(
-            '...',
-            style: TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ));
-      }
-      return avatars;
-    }
-
-    return Card(
-      color: Colors.white10,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              taskTitle,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Row(
+  Widget _buildBoardColumn(String title, Color color, int cardCount) {
+    return Container(
+      width: 380,
+      margin: EdgeInsets.only(left: 16, bottom: 16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Date in a colored box
-                Container(
-
-                  decoration: BoxDecoration(
-                    color: _getDueDateColor(dueDate),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Due: ${DateTime.parse(dueDate).toLocal().toString()}', // Show due date
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('$cardCount', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 600, // Reduced height
+            child: ListView(
+              padding: EdgeInsets.all(8),
+              children: [
+                ...List.generate(
+                  cardCount,
+                      (index) => _buildTaskCard('Task ${index + 1}', 'Label', 3, 1, '0/3'),
                 ),
-                // "Done" and "Blocked" buttons with checkboxes
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Mark as done
-                      },
-                      icon: const Icon(Icons.check_circle, size: 16),
-                      label: const Text('Done'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        minimumSize: const Size(70, 30),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Mark as blocked
-                      },
-                      icon: const Icon(Icons.block, size: 16),
-                      label: const Text('Blocked'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        minimumSize: const Size(90, 30),
-                      ),
-                    ),
-                  ],
+                ListTile(
+                  title: Text('+ Add a card', style: TextStyle(color: Colors.blue)),
+                  onTap: () {
+                    // Implement add card functionality
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Overlapping member avatars
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskCard(String title, String label, int attachments, int comments, String progress) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8, left: 8, right: 8),
+      decoration: BoxDecoration(
+        color: Colors.blueGrey[998], // Less black background
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            SizedBox(height: 8),
+
+            SizedBox(height: 8),
             Row(
-              children: _buildMemberAvatars(members),
+              children: [
+                Icon(Icons.attach_file, size: 16, color: Colors.grey),
+                Text('$attachments', style: TextStyle(color: Colors.grey)),
+                SizedBox(width: 8),
+                Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey),
+                Text('$comments', style: TextStyle(color: Colors.grey)),
+                SizedBox(width: 8),
+                Icon(Icons.check_box_outline_blank, size: 16, color: Colors.grey),
+                Text(progress, style: TextStyle(color: Colors.grey)),
+                SizedBox(width: 8),
+                Icon(Icons.check_box_outline_blank, size: 16, color: Colors.grey),
+                Text(progress, style: TextStyle(color: Colors.grey)),
+                SizedBox(width: 8),
+                _buildLabel(label),
+                Spacer(),
+                CircleAvatar(radius: 10, backgroundColor: Colors.grey[300]),
+              ],
             ),
           ],
         ),
@@ -167,4 +197,14 @@ class BoardScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildLabel(String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red[200],
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 12)),
+    );
+  }
 }

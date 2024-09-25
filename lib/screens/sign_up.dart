@@ -19,8 +19,6 @@ class SignUpScreenState extends State<SignUpScreen> {
 
   final Api _api = Api();
 
-  String? _passwordError;
-
   bool _isPasswordValid(String password) {
     if (password.length < 12) return false;
     if (!password.contains(RegExp(r'[A-Z]'))) return false;
@@ -41,7 +39,7 @@ class SignUpScreenState extends State<SignUpScreen> {
         );
 
         if (result['success']) {
-          Navigator.pushNamed(context, '/confirm-email');
+          Navigator.pushReplacementNamed(context, '/sign-in');
         } else {
           setState(() {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -57,6 +55,10 @@ class SignUpScreenState extends State<SignUpScreen> {
         });
       }
     }
+  }
+
+  void _signIn() {
+    Navigator.pushNamed(context, '/sign-in');
   }
 
   @override
@@ -190,14 +192,15 @@ class SignUpScreenState extends State<SignUpScreen> {
                     ),
                     child: const Text('Sign Up'),
                   ),
-                  if (_passwordError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text(
-                        _passwordError!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
+                  const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                  ),
+                  ListTile(
+                    title: const Text('Already signed up?', style: TextStyle(color: Colors.blue), textAlign: TextAlign.center,),
+                    onTap: () {
+                      _signIn();
+                    },
+                  ),
                 ],
               ),
             ),

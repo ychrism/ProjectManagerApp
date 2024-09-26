@@ -54,61 +54,123 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
     }
   }
 
-  void _showAddBoardPopup(BuildContext context) {
+  void _showBoardPopup(BuildContext context, {Map<String, dynamic>? boardToEdit}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Builder(
           builder: (BuildContext innerContext) {
             return AlertDialog(
-              backgroundColor: Colors.grey[800],
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('New Board', style: TextStyle(color: Colors.white)),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Container(
-                  width: double.maxFinite,
-                  child: AddBoardForm(
-                    onSubmit: (boardData) async {
-                      try {
-                        final result = await _api.createBoard(
-                          name: boardData['name'],
-                          startDate: boardData['startDateTime'],
-                          dueDate: boardData['dueDateTime'],
-                          description: boardData['description'],
-                          pic: boardData['pic'],
-                        );
-
-                        if (result['success']) {
-                          Navigator.of(context).pop();
-                          _showSnackBar('Board created successfully');
-                          setState(() {
-                            _fetchBoards(); // Refresh the board list
-                          });
-                        } else {
-                          _showSnackBar(result['error']);
-                        }
-                      } catch (e) {
-                        _showSnackBar('An error occurred. Please try again.');
-                      }
-                    },
-                  ),
+                backgroundColor: Colors.grey[800],
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(boardToEdit != null ? 'Edit Board' : 'New Board', style: TextStyle(color: Colors.white)),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
                 ),
-              )
+                content: SingleChildScrollView(
+                  child: Container(
+                    width: double.maxFinite,
+                    child: BoardForm(
+                      boardToEdit: boardToEdit,
+                      onSubmit: (boardData) async {
+                        try {
+                          Map<String, dynamic> result;
+                          if (boardToEdit != null) {
+                            result = await _api.updateBoard(
+                              boardId: boardToEdit['id'],
+                              updates: {
+                                'name': boardData['name'],
+                                'start_date': boardData['startDateTime'],
+                                'due_date': boardData['dueDateTime'],
+                                'description': boardData['description'],
+                                'pic': boardData['pic'],
+                              }
+                            );
+                          } else {
+                            result = await _api.createBoard(
+                              name: boardData['name'],
+                              startDate: boardData['startDateTime'],
+                              dueDate: boardData['dueDateTime'],
+                              description: boardData['description'],
+                              imageData: boardData['pic'],
+                            );
+                          }
+
+                          if (result['success']) {
+                            Navigator.of(context).pop();
+                            _showSnackBar(boardToEdit != null ? 'Board updated successfully' : 'Board created successfully');
+                            setState(() {
+                              _fetchBoards(); // Refresh the board list
+                            });
+                          } else {
+                            _showSnackBar(result['error']);
+                          }
+                        } catch (e) {
+                          _showSnackBar('An error occurred. Please try again.');
+                        }
+                      },
+                    ),
+                  ),
+                )
             );
           },
         );
       },
     );
+  }
+
+  void _showContextMenu(BuildContext context, Map<String, dynamic> board) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBoardPopup(context, boardToEdit: board);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete),
+                title: Text('Delete'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteBoard(board['id']);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteBoard(int boardId) async {
+    try {
+      final result = await _api.deleteBoard(boardId: boardId);
+      if (result['success']) {
+        _showSnackBar('Board deleted successfully');
+        setState(() {
+          _fetchBoards(); // Refresh the board list
+        });
+      } else {
+        _showSnackBar(result['error']);
+      }
+    } catch (e) {
+      _showSnackBar(
+          'An error occurred while deleting the board. Please try again.');
+    }
   }
 
   void _showSnackBar(String message) {
@@ -160,6 +222,9 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                   onTap: () {
                     widget.onBoardSelected(board['id']);
                   },
+                  onLongPress: () {
+                    _showContextMenu(context, board);
+                  },
                   child: Column(
                     children: [
                       Expanded(
@@ -189,7 +254,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
             right: 16.0,
             child: FloatingActionButton.extended(
               onPressed: () {
-                _showAddBoardPopup(context);
+                _showBoardPopup(context);
               },
               backgroundColor: Colors.lightBlue,
               label: Text('Add Board', style: TextStyle(color: Colors.white, fontSize: 20)),
@@ -202,26 +267,48 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 }
 
-class AddBoardForm extends StatefulWidget {
-  final Function(Map<String, dynamic>) onSubmit;
 
-  const AddBoardForm({Key? key, required this.onSubmit}) : super(key: key);
+class BoardForm extends StatefulWidget {
+  final Function(Map<String, dynamic>) onSubmit;
+  final Map<String, dynamic>? boardToEdit;
+
+  const BoardForm({Key? key, required this.onSubmit, this.boardToEdit}) : super(key: key);
 
   @override
-  AddBoardFormState createState() => AddBoardFormState();
+  BoardFormState createState() => BoardFormState();
 }
 
-class AddBoardFormState extends State<AddBoardForm> {
+class BoardFormState extends State<BoardForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _imageController = TextEditingController();
-  final _startDateTimeController = TextEditingController();
-  final _dueDateTimeController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _imageController;
+  late final TextEditingController _startDateTimeController;
+  late final TextEditingController _dueDateTimeController;
 
-  DateTime _startDateTime = DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
-  DateTime _dueDateTime = DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
-  late File _imageFile;
+  late DateTime _startDateTime;
+  late DateTime _dueDateTime;
+  File? _imageFile;
+  String? _existingImagePath;
+
+  @override
+  void initState() {
+    super.initState();
+    final board = widget.boardToEdit;
+    _nameController = TextEditingController(text: board?['name'] ?? '');
+    _descriptionController = TextEditingController(text: board?['description'] ?? '');
+    _existingImagePath = board?['pic'];
+    _imageController = TextEditingController(text: _getImageFileName(_existingImagePath));
+    _startDateTime = board?['startDate'] ?? DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
+    _dueDateTime = board?['dueDate'] ?? DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
+    _startDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
+    _dueDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
+  }
+
+  String _getImageFileName(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) return '';
+    return path.basename(imagePath);
+  }
 
   Future<void> _pickImage() async {
     var status = await Permission.photos.status;
@@ -229,8 +316,9 @@ class AddBoardFormState extends State<AddBoardForm> {
       final XFile? pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (pickedImage != null) {
         setState(() {
-          _imageController.text = pickedImage.name;
           _imageFile = File(pickedImage.path);
+          _imageController.text = path.basename(pickedImage.path);
+          _existingImagePath = null;
         });
       }
     } else {
@@ -298,21 +386,21 @@ class AddBoardFormState extends State<AddBoardForm> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      final imageData = _imageFile != null
+          ? {'file': _imageFile, 'fileName': path.basename(_imageFile!.path)}
+          : (_existingImagePath != null ? {'existingPath': _existingImagePath} : null);
+
       widget.onSubmit({
         'name': _nameController.text,
         'startDateTime': _startDateTime,
         'dueDateTime': _dueDateTime,
         'description': _descriptionController.text,
-        'pic': _imageFile,
+        'pic': imageData,
       });
     }
   }
 
-  void _addBoard() async {
-    if (_formKey.currentState!.validate()) {
 
-    }
-  }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -358,10 +446,10 @@ class AddBoardFormState extends State<AddBoardForm> {
             onTap: _pickImage,
             readOnly: true,
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (_imageFile == null && _existingImagePath == null) {
                 return 'Please choose an image file for your board';
               }
-              if (!isValidFileExtension(value)) {
+              if (_imageFile != null && !isValidFileExtension(_imageFile!.path)) {
                 return 'Please choose a PNG or JPEG image file';
               }
               return null;
@@ -390,7 +478,7 @@ class AddBoardFormState extends State<AddBoardForm> {
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
-              child: Text('Create Board'),
+              child: Text(widget.boardToEdit != null ? 'Update Board' : 'Create Board'),
             ),
           ),
         ],

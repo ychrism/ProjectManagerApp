@@ -79,16 +79,22 @@ class Api {
     }
   }
 
-  Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required File pic}) async {
+  Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required Map<String, dynamic>? imageData,}) async {
     try {
-      final response = await post('/boards/', {
+      var data = {
         'name': name,
         'start_date': startDate,
         'due_date': dueDate,
         'description': description,
         'progress': 0,
-        'pic': pic,
-      });
+      };
+      if (imageData != null) {
+        if (imageData.containsKey('file')) {
+          data['pic'] = imageData['file'];
+        }
+      }
+
+      final response = await post('/boards/', data);
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -98,9 +104,29 @@ class Api {
     }
   }
 
-  Future<Map<String, dynamic>> updateBoard({required String boardId, required Map<String, dynamic> updates}) async {
+  Future<Map<String, dynamic>> updateBoard({required int boardId, required Map<String, dynamic> updates}) async {
     try {
-      final response = await patch('/boards/$boardId', updates);
+      var data = Map<String, dynamic>.from(updates);
+
+      if (data.containsKey('pic') && data['pic'] is Map<String, dynamic>) {
+        var imageData = data['pic'];
+        if (imageData.containsKey('file')) {
+          // new upload
+          data['pic'] = imageData['file'];
+        } else {
+          // If no new file, remove the 'pic' field
+          data.remove('pic');
+        }
+      }
+
+      if (data.containsKey('start_date')) {
+        data['start_date'] = data['start_date'].toIso8601String();
+      }
+      if (data.containsKey('due_date')) {
+        data['due_date'] = data['due_date'].toIso8601String();
+      }
+
+      final response = await patch('/boards/$boardId/', data);
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -108,10 +134,19 @@ class Api {
       }
       return {'success': false, 'error': 'An unexpected error occurred'};
     }
+
   }
 
-  Future<void> deleteBoard({required String boardId}) async {
-    final response = await delete('/boards/$boardId');
+  Future<Map<String, dynamic>> deleteBoard({required int boardId}) async {
+    try {
+      final response = await delete('/boards/$boardId/');
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   // Card operations
@@ -142,7 +177,7 @@ class Api {
 
   Future<Map<String, dynamic>> updateCard({required String cardId, required Map<String, dynamic> updates}) async {
     try {
-      final response = await put('/cards/$cardId', updates);
+      final response = await put('/cards/$cardId/', updates);
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -153,13 +188,13 @@ class Api {
   }
 
   Future<Map<String, dynamic>> updateCardStatus({required String cardId, required String newStatus}) async {
-    return await patch('/cards/$cardId', {
+    return await patch('/cards/$cardId/', {
       'status': newStatus,
     });
   }
 
   Future<void> deleteCard({required String cardId}) async {
-    final response = await delete('/cards/$cardId');
+    final response = await delete('/cards/$cardId/');
   }
 
   // HTTP methods
@@ -263,7 +298,7 @@ class Api {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('An error occurred. Please contact the administrator.');
+      throw ApiException(e.toString());
     }
   }
 

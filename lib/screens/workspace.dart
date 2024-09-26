@@ -196,9 +196,9 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
           ],
         ),
         actions: [
-          IconButton(icon: Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: Icon(Icons.filter_list), onPressed: () {}),
-          IconButton(icon: Icon(Icons.share), onPressed: () {}),
+          IconButton(icon: Icon(Icons.search, color: Colors.white,), onPressed: () {}),
+          IconButton(icon: Icon(Icons.filter_list, color: Colors.white,), onPressed: () {}),
+          IconButton(icon: Icon(Icons.share, color: Colors.white,), onPressed: () {}),
         ],
         backgroundColor: Colors.black,
         automaticallyImplyLeading: false,

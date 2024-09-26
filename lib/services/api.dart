@@ -59,10 +59,6 @@ class Api {
   }
 
   // Board operations
-  Future<Map<String, dynamic>> fetchBoard({required String boardId}) async {
-    return await get('/boards/$boardId');
-  }
-
   Future<List<Map<String, dynamic>>> fetchBoards() async {
     try {
       final response = await get('/boards/');
@@ -76,6 +72,17 @@ class Api {
         rethrow;
       }
       throw ApiException('Failed to fetch boards');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchBoardDetails({required int boardId}) async {
+    try {
+      return await get('/boards/$boardId/');
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to fetch board details');
     }
   }
 
@@ -150,6 +157,22 @@ class Api {
   }
 
   // Card operations
+  Future<List<Map<String, dynamic>>> fetchCards({required int boardId}) async {
+    try {
+      final response = await get('/cards/?board=$boardId/');
+      if (response is List) {
+        return response.cast<Map<String, dynamic>>();
+      } else {
+        throw ApiException('Unexpected response format');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException("Failed to fetch the board's cards");
+    }
+  }
+
   Future<Map<String, dynamic>> fetchCard({required String cardId}) async {
     return await get('/cards/$cardId');
   }
@@ -298,7 +321,7 @@ class Api {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException(e.toString());
+      throw ApiException('An error occured. Please contact the administrator');
     }
   }
 

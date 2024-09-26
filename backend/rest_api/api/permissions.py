@@ -20,7 +20,7 @@ class IsAdminOrCardMember(permissions.BasePermission):
         # For card members
         if isinstance(obj, Card) and request.user in obj.members.all():
             # Allow GET requests (read access)
-            if request.method in permissions.SAFE_METHODS:
+            if request.method == 'GET' and view.action == 'list':
                 return True
             # Allow PATCH requests that only update 'status'
             if request.method == 'PATCH' and set(request.data.keys()) == {'status'}:

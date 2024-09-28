@@ -255,27 +255,36 @@ class BoardScreenState extends State<BoardScreen> {
                   children: [
                     _buildLabel(card['priority'] ?? 'LOW'),
                     SizedBox(width: 8,),
-                    TextButton(
-                        onPressed: () => _toggleTaskCompletion(card),
-                        child: Row(children: [
-                          Icon(
-                              card['status'] == 'DONE' ? Icons.check_box : Icons.check_box_outline_blank,
-                              size: 15,
-                              color: card['status'] == 'DONE' ? Colors.greenAccent : Colors.grey),
-                          SizedBox(width: 3,),
-                          Text('Done', style: TextStyle(fontSize:15, color: Colors.white),)
-                        ])
-                    ),
-                    TextButton(
-                        onPressed: () => card['status'] == 'BLOCKED' ? _toggleStrugglingOrNot(card, 'DOING') : _toggleStrugglingOrNot(card, 'BLOCKED'),
-                        child: Row(children: [
-                          Icon(card['status'] == 'BLOCKED' ? Icons.cancel : Icons.cancel_outlined,
-                              size: 15,
-                              color: card['status'] == 'BLOCKED' ? Colors.redAccent : Colors.grey),
-                          SizedBox(width: 3,),
-                          Text(card['status'] != 'BLOCKED' ? 'Stuck' : 'Fixed', style: TextStyle(fontSize:15, color: Colors.white),)
-                        ])
-                    ),
+                    IconButton(icon: Icon(card['status'] == 'DONE' ? Icons.check_box : Icons.check,
+                        size: 20,
+                        color: Colors.greenAccent),
+                        onPressed: () => card['status'] != 'DONE' ? _toggleTaskCompletion(card) : {}),
+                    IconButton(icon: Icon(Icons.delete_forever,
+                        size: 20,
+                        color: Colors.red),
+                        onPressed: () async {
+                          try {
+                            Map<String, dynamic> result;
+                            result = await _api.deleteCard(
+                              cardId: card['id'],
+                            );
+                            if (result['success']) {
+                              setState(() {
+                                _fetchBoardDetailsAndCards();
+                              });
+                            } else {
+                              _showSnackBar(result['error']);
+                            }
+                          } catch (e) {
+                            _showSnackBar('Failed to update card status: ${e.toString()}');
+                          }
+                        }),
+                    IconButton(icon: Icon(card['status'] == 'BLOCKED' ? Icons.lock_reset : Icons.lock_clock,
+                        size: 20,
+                        color: card['status'] != 'DONE' ? Colors.red[300] : Colors.grey),
+                        onPressed: () => card['status'] == 'BLOCKED' ? _toggleStrugglingOrNot(card, 'DOING') :
+                                         card['status'] == 'DOING' ? _toggleStrugglingOrNot(card, 'BLOCKED') :
+                                          {}),
                     SizedBox(width: 20,),
                     _buildDueDate(card['due_date']),
                   ],

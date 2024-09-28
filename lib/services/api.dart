@@ -233,8 +233,16 @@ class Api {
     }
   }
 
-  Future<void> deleteCard({required String cardId}) async {
-    final response = await delete('/cards/$cardId/');
+  Future<Map<String, dynamic>> deleteCard({required int cardId}) async {
+    try {
+      final response = await delete('/cards/$cardId/');
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   // HTTP methods

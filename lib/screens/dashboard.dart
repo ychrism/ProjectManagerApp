@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project_manager_app/screens/workspace.dart';
+import 'workspace.dart';
 import 'board.dart';
 import 'chat.dart';
 import 'settings.dart';
@@ -13,7 +13,7 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  int? _lastSelectedBoardId;
+  int? _selectedBoardId;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -21,9 +21,9 @@ class DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  void updateLastSelectedBoard(int boardId) {
+  void updateSelectedBoard(int boardId) {
     setState(() {
-      _lastSelectedBoardId = boardId;
+      _selectedBoardId = boardId;
       _selectedIndex = 1;
     });
   }
@@ -34,9 +34,12 @@ class DashboardScreenState extends State<DashboardScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          WorkspaceScreen(onBoardSelected: updateLastSelectedBoard),
-          _lastSelectedBoardId != null
-              ? BoardScreen(boardId: _lastSelectedBoardId!)
+          WorkspaceScreen(onBoardSelected: updateSelectedBoard),
+          _selectedBoardId != null
+              ? BoardScreen(
+            boardId: _selectedBoardId!,
+            key: ValueKey(_selectedBoardId),
+          )
               : Center(child: Text('No board selected')),
           ChatScreen(),
           SettingsScreen(),

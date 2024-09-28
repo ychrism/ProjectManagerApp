@@ -27,6 +27,14 @@ class BoardScreenState extends State<BoardScreen> {
     _fetchBoardDetailsAndCards();
   }
 
+  @override
+  void didUpdateWidget(BoardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.boardId != widget.boardId) {
+      _fetchBoardDetailsAndCards();
+    }
+  }
+
   Future<void> _fetchBoardDetailsAndCards() async {
     setState(() {
       isLoading = true;
@@ -71,7 +79,9 @@ class BoardScreenState extends State<BoardScreen> {
         backgroundColor: Colors.black,
         automaticallyImplyLeading: false,
       ),
-      body: Container(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Container(
         decoration: BoxDecoration(
           image: DecorationImage(
             image: NetworkImage(boardDetails['pic']), // Replace with your image path
@@ -79,9 +89,7 @@ class BoardScreenState extends State<BoardScreen> {
           ),
         ),
         child: Center( // Your content here
-          child: isLoading
-              ? Center(child: CircularProgressIndicator())
-              : Column(
+          child: Column(
             children: [
               SizedBox(height: 13),
               _buildMemberAvatars(),
@@ -242,35 +250,37 @@ class BoardScreenState extends State<BoardScreen> {
             children: [
               Text(card['title'], style: TextStyle(fontSize: 17, color: Colors.white)),
               SizedBox(height: 15),
-              Row(
-                children: [
-                  _buildLabel(card['priority'] ?? 'LOW'),
-                  SizedBox(width: 8,),
-                  TextButton(
-                      onPressed: () => _toggleTaskCompletion(card),
-                      child: Row(children: [
-                        Icon(
-                            card['status'] == 'DONE' ? Icons.check_box : Icons.check_box_outline_blank,
-                            size: 15,
-                            color: card['status'] == 'DONE' ? Colors.greenAccent : Colors.grey),
-                        SizedBox(width: 3,),
-                        Text('Done', style: TextStyle(fontSize:15, color: Colors.white),)
-                      ])
-                  ),
-                  TextButton(
-                      onPressed: () => card['status'] == 'BLOCKED' ? _toggleStrugglingOrNot(card, 'DOING') : _toggleStrugglingOrNot(card, 'BLOCKED'),
-                      child: Row(children: [
-                        Icon(card['status'] == 'BLOCKED' ? Icons.cancel : Icons.cancel_outlined,
-                            size: 15,
-                            color: card['status'] == 'BLOCKED' ? Colors.redAccent : Colors.grey),
-                        SizedBox(width: 3,),
-                        Text(card['status'] == 'BLOCKED' ? 'Blocked' : 'Unblocked', style: TextStyle(fontSize:15, color: Colors.white),)
-                      ])
-                  ),
-                  Spacer(),
-                  _buildDueDate(card['due_date']),
-                ],
-              ),
+              SingleChildScrollView(
+                child: Row(
+                  children: [
+                    _buildLabel(card['priority'] ?? 'LOW'),
+                    SizedBox(width: 8,),
+                    TextButton(
+                        onPressed: () => _toggleTaskCompletion(card),
+                        child: Row(children: [
+                          Icon(
+                              card['status'] == 'DONE' ? Icons.check_box : Icons.check_box_outline_blank,
+                              size: 15,
+                              color: card['status'] == 'DONE' ? Colors.greenAccent : Colors.grey),
+                          SizedBox(width: 3,),
+                          Text('Done', style: TextStyle(fontSize:15, color: Colors.white),)
+                        ])
+                    ),
+                    TextButton(
+                        onPressed: () => card['status'] == 'BLOCKED' ? _toggleStrugglingOrNot(card, 'DOING') : _toggleStrugglingOrNot(card, 'BLOCKED'),
+                        child: Row(children: [
+                          Icon(card['status'] == 'BLOCKED' ? Icons.cancel : Icons.cancel_outlined,
+                              size: 15,
+                              color: card['status'] == 'BLOCKED' ? Colors.redAccent : Colors.grey),
+                          SizedBox(width: 3,),
+                          Text(card['status'] != 'BLOCKED' ? 'Stuck' : 'Fixed', style: TextStyle(fontSize:15, color: Colors.white),)
+                        ])
+                    ),
+                    SizedBox(width: 20,),
+                    _buildDueDate(card['due_date']),
+                  ],
+                ),
+              )
             ],
           ),
         ),
@@ -280,13 +290,19 @@ class BoardScreenState extends State<BoardScreen> {
 
   Future<void> _toggleTaskCompletion(Map<String, dynamic> card) async {
     try {
-      await _api.updateCardStatus(
+      Map<String, dynamic> result;
+      result = await _api.updateCardStatus(
         cardId: card['id'],
         newStatus: 'DONE',
       );
-      setState(() {
-        _fetchBoardDetailsAndCards();
-      });
+      if (result['success']) {
+        setState(() {
+          _fetchBoardDetailsAndCards();
+        });
+        _showSnackBar('Well done ! Another completed task.');
+      } else {
+        _showSnackBar(result['error']);
+      }
     } catch (e) {
       _showSnackBar('Failed to update card status: ${e.toString()}');
     }

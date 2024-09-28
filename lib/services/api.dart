@@ -4,8 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'navigation.dart';
+import 'package:logger/logger.dart';
 
 const baseApiUrl =  'http://10.0.2.2:8000/api';
+final Logger logger = Logger();
 
 class Api {
   final String baseUrl;
@@ -200,6 +202,7 @@ class Api {
   Future<Map<String, dynamic>> updateCard({required int cardId, required Map<String, dynamic> updates}) async {
     try {
       var data = Map<String, dynamic>.from(updates);
+      //logger.i(data.toString());
       if (data.containsKey('start_date')) {
         data['start_date'] = data['start_date'].toIso8601String();
       }
@@ -208,6 +211,7 @@ class Api {
       }
 
       final response = await patch('/cards/$cardId/', data);
+      // logger.i(response.toString());
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -217,7 +221,7 @@ class Api {
     }
   }
 
-  Future<Map<String, dynamic>> updateCardStatus({required String cardId, required String newStatus}) async {
+  Future<Map<String, dynamic>> updateCardStatus({required int cardId, required String newStatus}) async {
     try {
       final response = await patch('/cards/$cardId/', {'status': newStatus});
       return {'success': true};

@@ -58,10 +58,14 @@ class CardSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         emails = validated_data.pop('emails', [])
-        members = TheUser.objects.filter(email__in=emails)
+        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.members.set(members)
+        
+        if len(emails) != 0:
+            members = TheUser.objects.filter(email__in=emails)
+            instance.members.set(members)
+        
         instance.save()
         return instance
 

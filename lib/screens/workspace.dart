@@ -299,8 +299,12 @@ class BoardFormState extends State<BoardForm> {
     _descriptionController = TextEditingController(text: board?['description'] ?? '');
     _existingImagePath = board?['pic'];
     _imageController = TextEditingController(text: _getImageFileName(_existingImagePath));
-    _startDateTime = board?['start_date'] ?? DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
-    _dueDateTime = board?['due_date'] ?? DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
+    _startDateTime = board != null && board['start_date'] != null
+        ? (DateTime.parse(board['start_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
+        : DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
+    _dueDateTime = board != null && board['due_date'] != null
+        ? (DateTime.parse(board['due_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
+        : DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
     _startDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
     _dueDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
   }

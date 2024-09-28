@@ -48,12 +48,6 @@ class CardSerializer(serializers.ModelSerializer):
         model = Card
         fields = ['id', 'title', 'priority', 'status', 'start_date', 'due_date', 'board', 'board_details', 'description', 'members', 'emails']  # Matching the Card model fields
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        board_id = self.request.query_params.get('board', None)
-        if board_id is not None:
-            queryset = queryset.filter(board=board)
-        return queryset
     
     def create(self, validated_data):
         emails = validated_data.pop('emails', [])

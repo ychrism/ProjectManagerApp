@@ -49,7 +49,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.workspaces_sharp), label: 'Workspaces'),
           BottomNavigationBarItem(icon: Icon(Icons.view_kanban), label: 'Boards'),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chats'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_2), label: 'Profil'),
         ],
       ),
     );

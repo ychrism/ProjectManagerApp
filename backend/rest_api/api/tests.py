@@ -73,7 +73,7 @@ class BaseAPITestCase(APITestCase):
 class TheUserAPITest(BaseAPITestCase):
     def test_signup(self):
         response = self.client.post(reverse('signup'), self.user_creds)
-        print(response.data)
+        #print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
     def test_login_success(self):
@@ -214,6 +214,7 @@ class CardAPITest(BaseAPITestCase):
             'emails': ["testuser1@example.com","testuser1@exemple.com"]
         }
         response = self.client.post(reverse('cards-list'), data, format='json')
+        #print(response.data)
         return response.data['id']
 
     def test_create_card(self):
@@ -255,13 +256,13 @@ class CardAPITest(BaseAPITestCase):
             'title': 'Updated Card Title',
             'description': 'Updated description',
             'priority': 'HIGH',
-            'board': self.board_id,
             'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),            
             'due_date': timezone.make_aware(datetime(2024, 1, 3, 0, 0, 0)),
             'status': 'DOING',
             'emails': ['yvescmedagbe@gmail.com', 'yvescmedagbe4@gmail.com']
         }
-        response = self.client.put(url, data)
+        response = self.client.patch(url, data)
+        #print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         card = Card.objects.get(id=response.data['id'])
@@ -273,13 +274,13 @@ class CardAPITest(BaseAPITestCase):
     
     def test_update_card_member_level(self):
         TheUser.objects.create_user(**{
-            'email': 'yvescmedagbe@gmail.com',
+            'email': 'yvescmedagbe5@gmail.com',
             'first_name': 'Test19',
             'last_name': 'User19',
             'password': 'password123'
         })
         TheUser.objects.create_user(**{
-            'email': 'yvescmedagbe4@gmail.com',
+            'email': 'yvescmedagbe6@gmail.com',
             'first_name': 'Test149',
             'last_name': 'User149',
             'password': 'password1234'
@@ -290,15 +291,15 @@ class CardAPITest(BaseAPITestCase):
             'title': 'Updated Card Title',
             'description': 'Updated description',
             'priority': 'HIGH',
-            'board': self.board_id,
             'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),            
             'due_date': timezone.make_aware(datetime(2024, 1, 3, 0, 0, 0)),
             'status': 'DONE',
-            'emails': ['yvescmedagbe@gmail.com', 'yvescmedagbe4@gmail.com']
+            'emails': ['yvescmedagbe5@gmail.com', 'yvescmedagbe6@gmail.com']
         }
-        response = self.client.put(url, data)
+        response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response = self.client.patch(url, {'status':'DONE'})
+        #print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 

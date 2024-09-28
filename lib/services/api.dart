@@ -159,7 +159,7 @@ class Api {
   // Card operations
   Future<List<Map<String, dynamic>>> fetchCards({required int boardId}) async {
     try {
-      final response = await get('/cards/?board=$boardId/');
+      final response = await get('/cards/?board=$boardId');
       if (response is List) {
         return response.cast<Map<String, dynamic>>();
       } else {
@@ -173,34 +173,41 @@ class Api {
     }
   }
 
-  Future<Map<String, dynamic>> fetchCard({required String cardId}) async {
-    return await get('/cards/$cardId');
-  }
 
-  Future<Map<String, dynamic>> createCard({required String title, required String priority, required DateTime startDate, required DateTime dueDate, required String description, required String board_id, required String status, required List<String> emails}) async {
+
+  Future<Map<String, dynamic>> createCard({required int boardId, required Map<String, dynamic> cardData}) async {
     try {
-      final response = await post('/cards/', {
-        'title': title,
-        'priority': priority,
-        'start_date': startDate,
-        'due_date': dueDate,
-        'description': description,
-        'board': board_id,
-        'status': status,
-        'emails': emails,
-      });
+
+      var data = Map<String, dynamic>.from(cardData);
+      data['board'] = boardId;
+      if (data.containsKey('start_date')) {
+        data['start_date'] = data['start_date'].toIso8601String();
+      }
+      if (data.containsKey('due_date')) {
+        data['due_date'] = data['due_date'].toIso8601String();
+      }
+
+      final response = await post('/cards/', data);
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
         return {'success': false, 'error': e.message};
       }
-      return {'success': false, 'error': 'An unexpected error occurred'};
+      return {'success': false, 'error': e.toString()};
     }
   }
 
-  Future<Map<String, dynamic>> updateCard({required String cardId, required Map<String, dynamic> updates}) async {
+  Future<Map<String, dynamic>> updateCard({required int cardId, required Map<String, dynamic> updates}) async {
     try {
-      final response = await put('/cards/$cardId/', updates);
+      var data = Map<String, dynamic>.from(updates);
+      if (data.containsKey('start_date')) {
+        data['start_date'] = data['start_date'].toIso8601String();
+      }
+      if (data.containsKey('due_date')) {
+        data['due_date'] = data['due_date'].toIso8601String();
+      }
+
+      final response = await patch('/cards/$cardId/', data);
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -211,9 +218,15 @@ class Api {
   }
 
   Future<Map<String, dynamic>> updateCardStatus({required String cardId, required String newStatus}) async {
-    return await patch('/cards/$cardId/', {
-      'status': newStatus,
-    });
+    try {
+      final response = await patch('/cards/$cardId/', {'status': newStatus});
+      return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
   }
 
   Future<void> deleteCard({required String cardId}) async {
@@ -321,7 +334,7 @@ class Api {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('An error occured. Please contact the administrator');
+      throw ApiException(e.toString());
     }
   }
 

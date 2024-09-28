@@ -65,20 +65,29 @@ class BoardViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class CardViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrCardMember]
-    queryset = Card.objects.all()
     serializer_class = CardSerializer
+
+    def get_queryset(self):
+        queryset = Card.objects.all()
+        board_id = self.request.query_params.get('board', None)
+        if board_id is not None:
+            queryset = queryset.filter(board_id=board_id)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         try:
-            card = super().create(request, *args, **kwargs)
-            self.update_board_members(card.data)
-            return Response(CardSerializer(card.data).data, status=status.HTTP_201_CREATED)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            card = serializer.save()
+            self.update_board_members(card)
+            return Response(CardSerializer(card).data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
-            if 'title' in str(e):
+            if 'title' in e.detail:
                 return Response({"err": "Card title already exists"}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({"err": "Failed to create card"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,21 +95,26 @@ class CardViewSet(viewsets.ModelViewSet):
         try:
             card = self.get_object()
             old_members = set(card.members.all())
+            serializer = self.get_serializer(card, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
             update_fields = request.data.keys()
-            
+            #print(update_fields)
+
             updated_card = super().update(request, *args, **kwargs)
             
             if 'emails' not in update_fields:
-                updated_card.data.members.set(old_members)
+                card.members.set(old_members)
             
-            self.update_board_members(updated_card.data)
-            return Response(CardSerializer(updated_card.data).data)
+            card.save()
+            self.update_board_members(card)
+            
+            return Response(CardSerializer(card).data)
         except ValidationError as e:
             if 'title' in str(e):
                 return Response({"err": "Card title already exists"}, status=status.HTTP_400_BAD_REQUEST)
             return Response({"err": "Failed to update card"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
 
     def update_board_members(self, card):

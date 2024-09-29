@@ -175,12 +175,16 @@ class BoardScreenState extends State<BoardScreen> {
     return ListView(
       scrollDirection: Axis.horizontal,
       children: groupedCards.entries.map((entry) {
-        return _buildBoardColumn(entry.key, Colors.black, entry.value);
+        if (entry.key == 'TODO') {
+          return _buildBoardColumn(entry.key, Colors.black, entry.value, isTodoList: true);
+        } else {
+          return _buildBoardColumn(entry.key, Colors.black, entry.value);
+        }
       }).toList(),
     );
   }
 
-  Widget _buildBoardColumn(String title, Color color, List<Map<String, dynamic>> columnCards) {
+  Widget _buildBoardColumn(String title, Color color, List<Map<String, dynamic>> columnCards, {bool isTodoList = false}) {
     return Container(
       width: 400,
       margin: EdgeInsets.only(left: 16, bottom: 16),
@@ -212,10 +216,12 @@ class BoardScreenState extends State<BoardScreen> {
                     onTap: () => _showCardDialog(context, card: card),
                   );
                 } else {
-                  return ListTile(
-                    title: Text('+ Add a card', style: TextStyle(color: Colors.blue)),
-                    onTap: () => _showCardDialog(context),
-                  );
+                  if (isTodoList) {
+                    return ListTile(
+                      title: Text('+ Add a card', style: TextStyle(color: Colors.blue)),
+                      onTap: () => _showCardDialog(context),
+                    );
+                  };
                 }
               },
             ),
@@ -469,8 +475,8 @@ class _CardFormState extends State<CardForm> {
   late TextEditingController _descriptionController;
   late TextEditingController _startDateTimeController;
   late TextEditingController _dueDateTimeController;
-  String _priority = 'LOW';
-  String _status = 'TODO';
+  late String _priority;
+  late String _status = 'TODO';
   late List<String> _emails;
   late DateTime _startDateTime;
   late DateTime _dueDateTime;
@@ -659,33 +665,6 @@ class _CardFormState extends State<CardForm> {
             onChanged: (String? newValue) {
               setState(() {
                 _priority = newValue!;
-              });
-            },
-          ),
-          DropdownButtonFormField<String>(
-            value: _status,
-            style: TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Status',
-              labelStyle: TextStyle(color: Colors.white),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
-              ),
-
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.blue),
-              ),
-            ),
-            dropdownColor: Colors.grey[900],
-            items: ['TODO', 'DOING', 'BLOCKED', 'DONE']
-                .map((String value) => DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            ))
-                .toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                _status = newValue!;
               });
             },
           ),

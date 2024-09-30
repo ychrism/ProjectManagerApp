@@ -1,9 +1,10 @@
-import 'dart:collection';
-
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class BoardScreen extends StatefulWidget {
   final int boardId;
@@ -20,12 +21,41 @@ class BoardScreenState extends State<BoardScreen> {
   Map<String, dynamic> boardDetails = {};
   bool isLoading = true;
   final Map<String, Color> membersColors = {};
+  late WebSocketChannel channel;
+
 
   @override
   void initState() {
     super.initState();
     _fetchBoardDetailsAndCards();
+  //  _connectWebSocket();
   }
+/*
+  @override
+  void dispose() {
+    channel.sink.close();
+    super.dispose();
+  }
+
+  void _connectWebSocket() {
+    final wsUrl = Uri.parse('ws://10.0.2.2:8000/ws/board/${widget.boardId}/');
+    channel = WebSocketChannel.connect(wsUrl);
+    channel.stream.listen((message) {
+      final data = jsonDecode(message);
+      if (data['type'] == 'card_status_update') {
+        _updateCardStatus(data['card_id'], data['new_status']);
+      }
+    });
+  }
+
+  void _updateCardStatus (int cardId, String newStatus) {
+    setState(() {
+      final cardIndex = cards.indexWhere((card) => card['id'] == cardId);
+      if (cardIndex != -1) {
+        cards[cardIndex]['status'] = newStatus;
+      }
+    });
+  }*/
 
   @override
   void didUpdateWidget(BoardScreen oldWidget) {
@@ -63,6 +93,9 @@ class BoardScreenState extends State<BoardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    /*Timer.periodic(Duration(minutes: 1), (_) {
+      channel.sink.add(jsonEncode({'type': 'check_card_status'}));
+    });*/
     return Scaffold(
       appBar: AppBar(
         elevation: 50,
@@ -706,8 +739,6 @@ class _CardFormState extends State<CardForm> {
     );
   }
 }
-
-
 
 
 

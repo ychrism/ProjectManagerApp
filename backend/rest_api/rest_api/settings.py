@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,19 +31,28 @@ DEBUG = True
 ALLOWED_HOSTS = ['10.0.2.2', 'localhost']
 
 
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+}
+
 # Application definition
 
 INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'api',
+    'corsheaders',
+#    'channels',
+#    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
-    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -86,6 +97,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'rest_api.wsgi.application'
+
+# ASGI_APPLICATION = 'rest_api.asgi.application'
+
+#CHANNEL_LAYERS = {
+#    'default': {
+#        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#        'CONFIG': {
+#            "hosts": [('127.0.0.1', 6379)],
+#        },
+#    },
+#}
 
 
 # Database

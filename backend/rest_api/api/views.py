@@ -8,6 +8,10 @@ from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError, PermissionDenied
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+#from .consumers import CardTaskConsumer
+from rest_framework.decorators import action
 
 
 
@@ -68,6 +72,20 @@ class BoardViewSet(viewsets.ModelViewSet):
             return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+"""
+    @action(detail=True, methods=['post'])
+    def check_card_status(self, request, pk=None):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.send)(
+            'card-tasks',
+            {
+                'type': 'check_card_status',
+                'board_id': pk
+            }
+        )
+        return Response({'status': 'Card status check initiated'})
+"""
 
 
 class CardViewSet(viewsets.ModelViewSet):

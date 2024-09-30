@@ -44,6 +44,13 @@ class Api {
 
       await _storage.write(key: 'access', value: response['access']);
       await _storage.write(key: 'refresh', value: response['refresh']);
+
+    //  String? accessToken = await _storage.read(key: 'access');
+    //  String? refreshToken = await _storage.read(key: 'refresh');
+
+    //  logger.i(accessToken);
+    //  logger.i(refreshToken);
+
       return {'success': true};
     } catch (e) {
       if (e is ApiException) {
@@ -320,16 +327,20 @@ class Api {
       }
 
       if (response.statusCode == 401) {
-        // Token might be expired, try to refresh
-        bool refreshed = await _refreshToken();
-        if (refreshed) {
-          // Retry the original request
-          return await _sendRequest(method, endpoint, body: body);
-        } else {
-          // If refresh failed, clear tokens and throw exception
-          await logout();
+        if (endpoint == '/signin/') {
+          // For login attempts, just throw the error without logging out
           throw ApiException('Invalid email or password');
+        } else {
+          // Token might be expired, try to refresh
+          bool refreshed = await _refreshToken();
+          if (refreshed) {
+            // Retry the original request
+            return await _sendRequest(method, endpoint, body: body);
+          } else {
+            await logout();
+          }
         }
+
       } else if (response.statusCode >= 200 && response.statusCode < 300) {
         // Try to parse the response as JSON
         try {
@@ -370,7 +381,7 @@ class Api {
         }
       }
     } catch (e) {
-      print('Error refreshing token: $e');
+      throw ApiException('Error refreshing token: $e');
     }
 
     return false;

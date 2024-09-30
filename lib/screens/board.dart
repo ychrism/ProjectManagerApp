@@ -106,7 +106,7 @@ class BoardScreenState extends State<BoardScreen> {
         elevation: 50,
         title: Row(
           children: [
-            Text(boardDetails['name'] ?? 'Loading...', style: const TextStyle(color: Colors.white)),
+            Text(boardDetails.isNotEmpty ? boardDetails['name'] : 'Board', style: const TextStyle(color: Colors.white)),
             //Icon(Icons.arrow_drop_down, color: Colors.white),
           ],
         ),
@@ -120,10 +120,10 @@ class BoardScreenState extends State<BoardScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Container(
-        decoration: boardDetails['pic'] != null
+        decoration: boardDetails.isNotEmpty
         ? BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(boardDetails['pic']), // Replace with your image path
+              image: NetworkImage(boardDetails['pic']),
               fit: BoxFit.cover, // Adjust the fit as needed
             ),
           )
@@ -178,6 +178,7 @@ class BoardScreenState extends State<BoardScreen> {
 
 
   Widget _buildProgressBar() {
+    double progress = boardDetails['progress'];
     return Container(
       margin: const EdgeInsets.all(16),
       child: Column(
@@ -186,13 +187,13 @@ class BoardScreenState extends State<BoardScreen> {
             alignment: Alignment.center,
             children: [
               LinearProgressIndicator(
-                value: 0.7,
+                value: boardDetails.isNotEmpty ? progress/100 : 0.0,
                 backgroundColor: Colors.black,
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                 minHeight: 16,
                 borderRadius: BorderRadius.circular(18),
               ),
-              const Text('70%', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(boardDetails.isNotEmpty ? "$progress%" : "0%", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
             ],
           ),
         ],
@@ -252,7 +253,7 @@ class BoardScreenState extends State<BoardScreen> {
                   });
                   Navigator.pop(context);
                 },
-                leading: Icon(Icons.arrow_upward),
+                leading: const Icon(Icons.arrow_upward),
               ),
               ListTile(
                 title: const Text('Descending'),
@@ -263,7 +264,7 @@ class BoardScreenState extends State<BoardScreen> {
                   });
                   Navigator.pop(context);
                 },
-                leading: Icon(Icons.arrow_downward),
+                leading: const Icon(Icons.arrow_downward),
               ),
             ],
           ),
@@ -668,10 +669,10 @@ class BoardScreenState extends State<BoardScreen> {
           const Icon(Icons.timelapse, size: 15, color: Colors.black),
           Text(_formatDate(stringDueDate), style: const TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold)),
         ]
-      ) 
+      )
     );
   }
-  
+
   Widget _buildLabel(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

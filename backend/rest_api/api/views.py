@@ -101,7 +101,9 @@ class CardViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            return super().create(request, *args, **kwargs)
+            response = super().create(request, *args, **kwargs)
+            self.update_board_progress(response.data['board_details']['id'])
+            return response
         except PermissionDenied as e:
             return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except ValidationError as e:
@@ -113,7 +115,10 @@ class CardViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            return super().update(request, *args, **kwargs)
+            response = super().update(request, *args, **kwargs)
+            self.update_board_progress(response.data['board_details']['id'])
+            print (response.data)
+            return response
         except PermissionDenied as e:
             return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)
         except ValidationError as e:
@@ -144,6 +149,19 @@ class CardViewSet(viewsets.ModelViewSet):
         
         # Update the board's members
         board.members.set(card_members)
+        board.save()
+
+    def update_board_progress(self, board_id):
+        board = Board.objects.get(id=board_id)
+        total_cards = Card.objects.filter(board=board).count()
+        completed_cards = Card.objects.filter(board=board, status='DONE').count()
+        
+        if total_cards > 0:
+            progress = (completed_cards / total_cards) * 100
+        else:
+            progress = 0
+        
+        board.progress = round(progress, 2)
         board.save()
 
 

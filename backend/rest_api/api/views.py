@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from .models import Board, Card, TheUser
 from .serializers import BoardSerializer, CardSerializer, TheUserSerializer, SignInSerializer
 from rest_framework import generics, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -151,3 +151,8 @@ class CardViewSet(viewsets.ModelViewSet):
 class TheUserViewSet(viewsets.ModelViewSet):
     queryset = TheUser.objects.all()
     serializer_class = TheUserSerializer
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)

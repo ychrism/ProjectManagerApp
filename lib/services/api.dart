@@ -61,6 +61,17 @@ class Api {
 
   }
 
+  Future<Map<String, dynamic>> fetchCurrentUser() async {
+    try {
+      return await get('/users/me/');
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to fetch current user');
+    }
+  }
+
   Future<void> logout() async {
     await _storage.delete(key: 'access');
     await _storage.delete(key: 'refresh');

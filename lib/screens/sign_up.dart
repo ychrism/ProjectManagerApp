@@ -58,7 +58,7 @@ class SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _signIn() {
-    Navigator.pushNamed(context, '/sign-in');
+    Navigator.pushReplacementNamed(context, '/sign-in');
   }
 
   @override
@@ -196,7 +196,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                       padding: EdgeInsets.only(top: 16),
                   ),
                   ListTile(
-                    title: const Text('Already signed up?', style: TextStyle(color: Colors.blue), textAlign: TextAlign.center,),
+                    title: const Text('Sign in', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
                     onTap: () {
                       _signIn();
                     },
@@ -227,6 +227,15 @@ class SignUpScreenState extends State<SignUpScreen> {
           borderRadius: BorderRadius.circular(8),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        labelStyle: TextStyle(color: Colors.black),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.black, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.blue, width: 1.5),
+        ),
       ),
       obscureText: obscureText,
       keyboardType: keyboardType,

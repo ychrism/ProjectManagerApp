@@ -300,11 +300,11 @@ class BoardFormState extends State<BoardForm> {
     _existingImagePath = board?['pic'];
     _imageController = TextEditingController(text: _getImageFileName(_existingImagePath));
     _startDateTime = board != null && board['start_date'] != null
-        ? (DateTime.parse(board['start_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
-        : DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
+        ? (DateTime.parse(board['start_date'] as String))
+        : DateTime.now();
     _dueDateTime = board != null && board['due_date'] != null
-        ? (DateTime.parse(board['due_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
-        : DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
+        ? (DateTime.parse(board['due_date'] as String))
+        : DateTime.now().add(Duration(days: 1));
     _startDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
     _dueDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
   }
@@ -357,8 +357,9 @@ class BoardFormState extends State<BoardForm> {
           pickedTime.hour,
           pickedTime.minute,
         );
-        final timezoneOffset = DateTime.now().timeZoneOffset;
-        return dateTime.toUtc().add(timezoneOffset);
+        //final timezoneOffset = DateTime.now().timeZoneOffset;
+        //return dateTime.toUtc().add(timezoneOffset);
+        return dateTime;
       }
     }
     return null;
@@ -396,8 +397,8 @@ class BoardFormState extends State<BoardForm> {
 
       widget.onSubmit({
         'name': _nameController.text,
-        'startDateTime': _startDateTime,
-        'dueDateTime': _dueDateTime,
+        'startDateTime': _startDateTime.toIso8601String(),
+        'dueDateTime': _dueDateTime.toIso8601String(),
         'description': _descriptionController.text,
         'pic': imageData,
       });

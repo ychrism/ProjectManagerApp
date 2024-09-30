@@ -106,7 +106,7 @@ class Api {
     }
   }
 
-  Future<Map<String, dynamic>> createBoard({required String name, required DateTime startDate, required DateTime dueDate,  required String description, required Map<String, dynamic>? imageData,}) async {
+  Future<Map<String, dynamic>> createBoard({required String name, required String startDate, required String dueDate,  required String description, required Map<String, dynamic>? imageData,}) async {
     try {
       var data = {
         'name': name,
@@ -144,13 +144,6 @@ class Api {
           // If no new file, remove the 'pic' field
           data.remove('pic');
         }
-      }
-
-      if (data.containsKey('start_date')) {
-        data['start_date'] = data['start_date'].toIso8601String();
-      }
-      if (data.containsKey('due_date')) {
-        data['due_date'] = data['due_date'].toIso8601String();
       }
 
       final response = await patch('/boards/$boardId/', data);
@@ -200,13 +193,6 @@ class Api {
 
       var data = Map<String, dynamic>.from(cardData);
       data['board'] = boardId;
-      if (data.containsKey('start_date')) {
-        data['start_date'] = data['start_date'].toIso8601String();
-      }
-      if (data.containsKey('due_date')) {
-        data['due_date'] = data['due_date'].toIso8601String();
-      }
-
       final response = await post('/cards/', data);
       return {'success': true};
     } catch (e) {
@@ -221,13 +207,6 @@ class Api {
     try {
       var data = Map<String, dynamic>.from(updates);
       //logger.i(data.toString());
-      if (data.containsKey('start_date')) {
-        data['start_date'] = data['start_date'].toIso8601String();
-      }
-      if (data.containsKey('due_date')) {
-        data['due_date'] = data['due_date'].toIso8601String();
-      }
-
       final response = await patch('/cards/$cardId/', data);
       // logger.i(response.toString());
       return {'success': true};

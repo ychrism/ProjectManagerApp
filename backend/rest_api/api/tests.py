@@ -108,8 +108,8 @@ class BoardAPITest(BaseAPITestCase):
         with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
             data = {
                 'name': 'Test Board',
-                'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),
-                'due_date': timezone.make_aware(datetime(2024, 1, 10, 0, 0, 0)),
+                'start_date': datetime(2024, 1, 1, 0, 0, 0),
+                'due_date': datetime(2024, 1, 10, 0, 0, 0),
                 'description': 'A test board',
                 'progress': 0,
                 'pic': pic_file
@@ -122,8 +122,8 @@ class BoardAPITest(BaseAPITestCase):
         with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
             data = {
                 'name': 'Another Test Board',
-                'start_date': timezone.make_aware(datetime(2024, 2, 1, 0, 0, 0)),
-                'due_date': timezone.make_aware(datetime(2024, 2, 10, 0, 0, 0)),
+                'start_date': datetime(2024, 2, 1, 0, 0, 0),
+                'due_date': datetime(2024, 2, 10, 0, 0, 0),
                 'description': 'Another test board',
                 'progress': 0,
                 'pic': pic_file
@@ -155,8 +155,8 @@ class BoardAPITest(BaseAPITestCase):
         with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
             data = {
                 'name': 'Test Board',
-                'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),
-                'due_date': timezone.make_aware(datetime(2024, 1, 10, 0, 0, 0)),
+                'start_date': datetime(2024, 1, 1, 0, 0, 0),
+                'due_date': datetime(2024, 1, 10, 0, 0, 0),
                 'description': 'A test board',
                 'progress': 0,
                 'pic': pic_file
@@ -168,8 +168,8 @@ class BoardAPITest(BaseAPITestCase):
         self.authenticate_as_admin()
         with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
             data = {
-                'start_date': timezone.make_aware(datetime(2024, 2, 1, 0, 0, 0)),
-                'due_date': timezone.make_aware(datetime(2024, 2, 20, 0, 0, 0)),
+                'start_date': datetime(2024, 2, 1, 0, 0, 0),
+                'due_date': datetime(2024, 2, 20, 0, 0, 0),
                 'description': 'Another test board',
                 'progress': 1,
             }
@@ -192,8 +192,8 @@ class CardAPITest(BaseAPITestCase):
         with open('/home/mcluffy99/Pictures/logo.jpg', "rb") as pic_file:
             data = {
                 'name': 'Test Board',
-                'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),
-                'due_date': timezone.make_aware(datetime(2024, 1, 10, 0, 0, 0)),
+                'start_date': datetime(2024, 1, 1, 0, 0, 0),
+                'due_date': datetime(2024, 1, 10, 0, 0, 0),
                 'description': 'A test board',
                 'progress': 0,
                 'pic': pic_file
@@ -206,8 +206,8 @@ class CardAPITest(BaseAPITestCase):
         data = {
             'title': 'New Card',
             'priority': 'HIGH',
-            'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),
-            'due_date': timezone.make_aware(datetime(2024, 1, 3, 0, 0, 0)),
+            'start_date': datetime(2024, 1, 1, 0, 0, 0),
+            'due_date': datetime(2024, 1, 3, 0, 0, 0),
             'description': 'A new test card',
             'board': self.board_id,
             'status': 'TODO',
@@ -222,8 +222,8 @@ class CardAPITest(BaseAPITestCase):
         data = {
             'title': 'Another Card',
             'priority': 'LOW',
-            'start_date': timezone.make_aware(datetime(2024, 1, 5, 0, 0, 0)),
-            'due_date': timezone.make_aware(datetime(2024, 1, 7, 0, 0, 0)),
+            'start_date': datetime(2024, 1, 5, 0, 0, 0),
+            'due_date': datetime(2024, 1, 7, 0, 0, 0),
             'description': 'Another test card',
             'board': self.board_id,
             'status': 'TODO',
@@ -256,8 +256,8 @@ class CardAPITest(BaseAPITestCase):
             'title': 'Updated Card Title',
             'description': 'Updated description',
             'priority': 'HIGH',
-            'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),            
-            'due_date': timezone.make_aware(datetime(2024, 1, 3, 0, 0, 0)),
+            'start_date': datetime(2024, 1, 1, 0, 0, 0),            
+            'due_date': datetime(2024, 1, 3, 0, 0, 0),
             'status': 'DOING',
             'emails': ['yvescmedagbe@gmail.com', 'yvescmedagbe4@gmail.com']
         }
@@ -291,8 +291,8 @@ class CardAPITest(BaseAPITestCase):
             'title': 'Updated Card Title',
             'description': 'Updated description',
             'priority': 'HIGH',
-            'start_date': timezone.make_aware(datetime(2024, 1, 1, 0, 0, 0)),            
-            'due_date': timezone.make_aware(datetime(2024, 1, 3, 0, 0, 0)),
+            'start_date': datetime(2024, 1, 1, 0, 0, 0),            
+            'due_date': datetime(2024, 1, 3, 0, 0, 0),
             'status': 'DONE',
             'emails': ['yvescmedagbe5@gmail.com', 'yvescmedagbe6@gmail.com']
         }

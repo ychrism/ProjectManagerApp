@@ -99,6 +99,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
               accountName: Text('${_userProfile!['first_name']} ${_userProfile!['last_name']}'),
               accountEmail: Text(_userProfile!['email']),
               currentAccountPicture: CircleAvatar(
@@ -110,8 +111,8 @@ class DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text('Logout'),
+              leading: Icon(Icons.logout, color: Colors.white,),
+              title: Text('Logout', style: TextStyle(color: Colors.white),),
               onTap: _handleLogout,
             ),
           ],

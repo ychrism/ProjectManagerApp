@@ -16,7 +16,7 @@ class ConfirmEmailScreenState extends State<ConfirmEmailScreen> {
     final otp = _otpController.text;
 
     // After successful confirmation, navigate to sign-in
-    Navigator.pushNamed(context, '/sign-in');
+    Navigator.pushReplacementNamed(context, '/sign-in');
   }
 
   @override

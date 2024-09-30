@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+
 class BoardScreen extends StatefulWidget {
   final int boardId;
 
@@ -101,30 +102,34 @@ class BoardScreenState extends State<BoardScreen> {
         elevation: 50,
         title: Row(
           children: [
-            Text(boardDetails['name'] ?? 'Loading...', style: TextStyle(color: Colors.white)),
+            Text(boardDetails['name'] ?? 'Loading...', style: const TextStyle(color: Colors.white)),
             //Icon(Icons.arrow_drop_down, color: Colors.white),
           ],
         ),
         actions: [
-          IconButton(icon: Icon(Icons.search, color: Colors.white), onPressed: () {}),
-          IconButton(icon: Icon(Icons.filter_list_alt, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.filter_list_alt, color: Colors.white), onPressed: () {}),
         ],
         backgroundColor: Colors.black,
         automaticallyImplyLeading: false,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage(boardDetails['pic']), // Replace with your image path
-            fit: BoxFit.cover, // Adjust the fit as needed
+        decoration: boardDetails['pic'] != null
+        ? BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(boardDetails['pic']), // Replace with your image path
+              fit: BoxFit.cover, // Adjust the fit as needed
+            ),
+          )
+        : const BoxDecoration(
+            color: Colors.white10
           ),
-        ),
         child: Center( // Your content here
           child: Column(
             children: [
-              SizedBox(height: 13),
+              const SizedBox(height: 13),
               _buildMemberAvatars(),
               _buildProgressBar(),
               Expanded(
@@ -141,7 +146,7 @@ class BoardScreenState extends State<BoardScreen> {
     return Container(
       height: 45,
       width: 200,
-      margin: EdgeInsets.only(right: 300),
+      margin: const EdgeInsets.only(right: 300),
       child: Stack(
         children: [
           Positioned(left: 10, child: _buildAvatar(Colors.blue)),
@@ -162,7 +167,7 @@ class BoardScreenState extends State<BoardScreen> {
       ),
       child: CircleAvatar(
         backgroundColor: color,
-        child: label != null ? Text(label, style: TextStyle(color: Colors.white)) : null,
+        child: label != null ? Text(label, style: const TextStyle(color: Colors.white)) : null,
       ),
     );
   }
@@ -170,7 +175,7 @@ class BoardScreenState extends State<BoardScreen> {
 
   Widget _buildProgressBar() {
     return Container(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Column(
         children: [
           Stack(
@@ -179,11 +184,11 @@ class BoardScreenState extends State<BoardScreen> {
               LinearProgressIndicator(
                 value: 0.7,
                 backgroundColor: Colors.black,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                 minHeight: 16,
                 borderRadius: BorderRadius.circular(18),
               ),
-              Text('70%', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('70%', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
             ],
           ),
         ],
@@ -220,7 +225,7 @@ class BoardScreenState extends State<BoardScreen> {
   Widget _buildBoardColumn(String title, Color color, List<Map<String, dynamic>> columnCards, {bool isTodoList = false}) {
     return Container(
       width: 400,
-      margin: EdgeInsets.only(left: 16, bottom: 16),
+      margin: const EdgeInsets.only(left: 16, bottom: 16),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
@@ -232,14 +237,14 @@ class BoardScreenState extends State<BoardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20)),
-                Text('${columnCards.length}', style: TextStyle(color: Colors.white, fontSize: 15)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20)),
+                Text('${columnCards.length}', style: const TextStyle(color: Colors.white, fontSize: 15)),
               ],
             ),
           ),
           Expanded(
             child: ListView.builder(
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               itemCount: columnCards.length + 1,  // +1 for the "Add a card" button
               itemBuilder: (context, index) {
                 if (index < columnCards.length) {
@@ -251,7 +256,7 @@ class BoardScreenState extends State<BoardScreen> {
                 } else {
                   if (isTodoList) {
                     return ListTile(
-                      title: Text('+ Add a card', style: TextStyle(color: Colors.blue)),
+                      title: const Text('+ Add a card', style: TextStyle(color: Colors.blue)),
                       onTap: () => _showCardDialog(context),
                     );
                   };
@@ -269,7 +274,7 @@ class BoardScreenState extends State<BoardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.only(bottom: 8, left: 8, right: 8),
+        margin: const EdgeInsets.only(bottom: 8, left: 8, right: 8),
         decoration: BoxDecoration(
           color: Colors.blueGrey[998], // Less black background
           borderRadius: BorderRadius.circular(18),
@@ -278,7 +283,7 @@ class BoardScreenState extends State<BoardScreen> {
               color: Colors.grey.withOpacity(0.2),
               spreadRadius: 1,
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -287,18 +292,18 @@ class BoardScreenState extends State<BoardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(card['title'], style: TextStyle(fontSize: 17, color: Colors.white)),
-              SizedBox(height: 15),
+              Text(card['title'], style: const TextStyle(fontSize: 17, color: Colors.white)),
+              const SizedBox(height: 15),
               SingleChildScrollView(
                 child: Row(
                   children: [
                     _buildLabel(card['priority'] ?? 'LOW'),
-                    SizedBox(width: 8,),
+                    const SizedBox(width: 8,),
                     IconButton(icon: Icon(card['status'] == 'DONE' ? Icons.check_box : Icons.check,
                         size: 20,
                         color: Colors.greenAccent),
                         onPressed: () => card['status'] != 'DONE' ? _toggleTaskCompletion(card) : {}),
-                    IconButton(icon: Icon(Icons.delete_forever,
+                    IconButton(icon: const Icon(Icons.delete_forever,
                         size: 20,
                         color: Colors.red),
                         onPressed: () async {
@@ -324,7 +329,7 @@ class BoardScreenState extends State<BoardScreen> {
                         onPressed: () => card['status'] == 'BLOCKED' ? _toggleStrugglingOrNot(card, 'DOING') :
                                          card['status'] == 'DOING' ? _toggleStrugglingOrNot(card, 'BLOCKED') :
                                           {}),
-                    SizedBox(width: 20,),
+                    const SizedBox(width: 20,),
                     _buildDueDate(card['due_date']),
                   ],
                 ),
@@ -380,9 +385,9 @@ class BoardScreenState extends State<BoardScreen> {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(card != null ? 'Edit Card' : 'Create New Card', style: TextStyle(color: Colors.white)),
+              Text(card != null ? 'Edit Card' : 'Create New Card', style: const TextStyle(color: Colors.white)),
               IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -426,15 +431,15 @@ class BoardScreenState extends State<BoardScreen> {
 
   Widget _buildDueDate (String stringDueDate) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: _getDueDateColor(stringDueDate),
         borderRadius: BorderRadius.circular(3),
       ),
       child: Row(
         children: [
-          Icon(Icons.timelapse, size: 15, color: Colors.black),
-          Text(_formatDate(stringDueDate), style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold)),
+          const Icon(Icons.timelapse, size: 15, color: Colors.black),
+          Text(_formatDate(stringDueDate), style: const TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold)),
         ]
       ) 
     );
@@ -442,12 +447,12 @@ class BoardScreenState extends State<BoardScreen> {
   
   Widget _buildLabel(String label) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: _getPriorityColor(label),
         borderRadius: BorderRadius.circular(3),
       ),
-      child: Text(label, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+      child: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -520,13 +525,13 @@ class _CardFormState extends State<CardForm> {
     _titleController = TextEditingController(text: widget.card?['title'] ?? '');
     _descriptionController = TextEditingController(text: widget.card?['description'] ?? '');
     _startDateTime = widget.card != null && widget.card!['start_date'] != null
-        ? (DateTime.parse(widget.card!['start_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
-        : DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
+        ? (DateTime.parse(widget.card!['start_date'] as String))
+        : DateTime.now();
     _dueDateTime = widget.card != null && widget.card!['due_date'] != null
-        ? (DateTime.parse(widget.card!['due_date'] as String)).toUtc().add(DateTime.now().timeZoneOffset)
-        : DateTime.now().add(Duration(days: 1)).toUtc().add(DateTime.now().timeZoneOffset);
-    _startDateTimeController = TextEditingController(text: widget.card?['start_date'] ?? DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
-    _dueDateTimeController = TextEditingController(text: widget.card?['due_date'] ?? DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
+        ? (DateTime.parse(widget.card!['due_date'] as String))
+        : DateTime.now().add(const Duration(days: 1));
+    _startDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
+    _dueDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
     _priority = widget.card?['priority'] ?? 'LOW';
     _status = widget.card?['status'] ?? 'TODO';
     _emails = [];
@@ -580,8 +585,8 @@ class _CardFormState extends State<CardForm> {
         children: [
           TextFormField(
             controller: _titleController,
-            style: TextStyle(color: Colors.white),
-            decoration: InputDecoration(
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
               labelText: 'Title',
               prefixIcon: Icon(Icons.title, color: Colors.white),
               labelStyle: TextStyle(color: Colors.white),
@@ -601,8 +606,8 @@ class _CardFormState extends State<CardForm> {
           ),
           TextFormField(
             controller: _descriptionController,
-            style: TextStyle(color: Colors.white),
-            decoration: InputDecoration(
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
               labelText: 'Description',
               prefixIcon: Icon(Icons.description, color: Colors.white),
               labelStyle: TextStyle(color: Colors.white),
@@ -623,9 +628,9 @@ class _CardFormState extends State<CardForm> {
           ),
           TextFormField(
             readOnly: true,
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
             controller: _startDateTimeController,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Start Date & time',
               prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
               labelStyle: TextStyle(color: Colors.white),
@@ -649,8 +654,8 @@ class _CardFormState extends State<CardForm> {
           TextFormField(
             controller: _dueDateTimeController,
             readOnly: true,
-            style: TextStyle(color: Colors.white),
-            decoration: InputDecoration(
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
               labelText: 'Due Date & time',
               prefixIcon: Icon(Icons.calendar_today, color: Colors.white),
               labelStyle: TextStyle(color: Colors.white),
@@ -677,8 +682,8 @@ class _CardFormState extends State<CardForm> {
           ),
           DropdownButtonFormField<String>(
             value: _priority,
-            style: TextStyle(color: Colors.white),
-            decoration: InputDecoration(
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
               labelText: 'Priority',
               labelStyle: TextStyle(color: Colors.white),
               enabledBorder: UnderlineInputBorder(
@@ -710,7 +715,7 @@ class _CardFormState extends State<CardForm> {
               });
             },
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -724,8 +729,8 @@ class _CardFormState extends State<CardForm> {
                   widget.onSubmit({
                     'title': _titleController.text,
                     'description': _descriptionController.text,
-                    'start_date': _startDateTime,
-                    'due_date': _dueDateTime,
+                    'start_date': _startDateTime.toIso8601String(),
+                    'due_date': _dueDateTime.toIso8601String(),
                     'priority': _priority,
                     'status': _status,
                     'emails': _emails,
@@ -804,16 +809,16 @@ class _EmailChipInputFieldState extends State<EmailChipInputField> {
                   child: Text(email[0].toUpperCase()),
                 ),
                 label: Text(email),
-                deleteIcon: Icon(Icons.close, size: 18),
+                deleteIcon: const Icon(Icons.close, size: 18),
                 onDeleted: () => _removeEmail(email),
               )),
             ],
           ),
           TextFormField(
             controller: _controller,
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
             focusNode: _focusNode,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'Enter email addresses',
               hintStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.normal),
               prefixIcon: Icon(Icons.calendar_today, color: Colors.white),

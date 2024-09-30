@@ -38,6 +38,10 @@ class SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  void _signUp() {
+    Navigator.pushReplacementNamed(context, '/sign-up');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,12 +95,18 @@ class SignInScreenState extends State<SignInScreen> {
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: 'Email',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     prefixIcon: Icon(Icons.email),
+                    labelStyle: TextStyle(color: Colors.black),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.black, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.blue, width: 1.5),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -105,8 +115,14 @@ class SignInScreenState extends State<SignInScreen> {
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    border: OutlineInputBorder(
+                    labelStyle: TextStyle(color: Colors.black),
+                    enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.black, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.blue, width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -135,6 +151,12 @@ class SignInScreenState extends State<SignInScreen> {
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text('Sign In'),
+                ),
+                ListTile(
+                  title: const Text('Sign up', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                  onTap: () {
+                    _signUp();
+                  },
                 ),
               ],
             ),

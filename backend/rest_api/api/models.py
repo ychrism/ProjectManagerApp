@@ -66,7 +66,7 @@ class CardPriority(models.TextChoices):
     LOW = 'LOW', 'Low'
     MEDIUM = 'MEDIUM', 'Medium'
     HIGH = 'HIGH', 'High'
-    URGENT = 'URGENT', 'Urgent'
+    CRITICAL = 'CRITICAL', 'Critical'
 
 
 class CardStatus(models.TextChoices):

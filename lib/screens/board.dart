@@ -22,6 +22,10 @@ class BoardScreenState extends State<BoardScreen> {
   Map<String, dynamic> boardDetails = {};
   bool isLoading = true;
   final Map<String, Color> membersColors = {};
+  String _sortCriteria = 'none';
+  String _filterCriteria = 'none';
+  String _filterValue = '';
+  bool _sortAscending = true ;
   late WebSocketChannel channel;
 
 
@@ -107,8 +111,8 @@ class BoardScreenState extends State<BoardScreen> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.filter_list_alt, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.sort, color: Colors.white), onPressed:_showSortOptions),
+          IconButton(icon: const Icon(Icons.filter_list_alt, color: Colors.white), onPressed:_showFilterOptions,),
         ],
         backgroundColor: Colors.black,
         automaticallyImplyLeading: false,
@@ -196,7 +200,223 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  void _showSortOptions() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sort by'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Priority'),
+                onTap: () => _showSortDirectionOptions('priority'),
+              ),
+              ListTile(
+                title: const Text('Due Date'),
+                onTap: () => _showSortDirectionOptions('dueDate'),
+              ),
+              ListTile(
+                title: const Text('None'),
+                onTap: () {
+                  setState(() {
+                    _sortCriteria = 'none';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSortDirectionOptions(String criteria) {
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sort Direction'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Ascending'),
+                onTap: () {
+                  setState(() {
+                    _sortCriteria = criteria;
+                    _sortAscending = true;
+                  });
+                  Navigator.pop(context);
+                },
+                leading: Icon(Icons.arrow_upward),
+              ),
+              ListTile(
+                title: const Text('Descending'),
+                onTap: () {
+                  setState(() {
+                    _sortCriteria = criteria;
+                    _sortAscending = false;
+                  });
+                  Navigator.pop(context);
+                },
+                leading: Icon(Icons.arrow_downward),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFilterOptions() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Filter by'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Priority'),
+                onTap: _showPriorityFilterOptions,
+              ),
+              ListTile(
+                title: const Text('Status'),
+                onTap: _showStatusFilterOptions,
+              ),
+              ListTile(
+                title: const Text('Due Soon'),
+                onTap: () {
+                  setState(() {
+                    _filterCriteria = 'dueSoon';
+                    _filterValue = '';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('None'),
+                onTap: () {
+                  setState(() {
+                    _filterCriteria = 'none';
+                    _filterValue = '';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPriorityFilterOptions() {
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Filter by Priority'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Low'),
+                onTap: () => _applyFilter('priority', 'LOW'),
+              ),
+              ListTile(
+                title: const Text('Medium'),
+                onTap: () => _applyFilter('priority', 'MEDIUM'),
+              ),
+              ListTile(
+                title: const Text('High'),
+                onTap: () => _applyFilter('priority', 'HIGH'),
+              ),
+              ListTile(
+                title: const Text('Critical'),
+                onTap: () => _applyFilter('priority', 'CRITICAL'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showStatusFilterOptions() {
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Filter by Status'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('TODO'),
+                onTap: () => _applyFilter('status', 'TODO'),
+              ),
+              ListTile(
+                title: const Text('DOING'),
+                onTap: () => _applyFilter('status', 'DOING'),
+              ),
+              ListTile(
+                title: const Text('BLOCKED'),
+                onTap: () => _applyFilter('status', 'BLOCKED'),
+              ),
+              ListTile(
+                title: const Text('DONE'),
+                onTap: () => _applyFilter('status', 'DONE'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _applyFilter(String criteria, String value) {
+    setState(() {
+      _filterCriteria = criteria;
+      _filterValue = value;
+    });
+    Navigator.pop(context);
+  }
+
   Widget _buildBoardList() {
+    // Apply sorting
+    List<Map<String, dynamic>> sortedCards = List.from(cards);
+    if (_sortCriteria == 'priority') {
+      sortedCards.sort((a, b) => _comparePriority(a['priority'], b['priority']));
+    } else if (_sortCriteria == 'dueDate') {
+      sortedCards.sort((a, b) => DateTime.parse(a['due_date']).compareTo(DateTime.parse(b['due_date'])));
+    }
+
+    if (!_sortAscending) {
+      sortedCards = sortedCards.reversed.toList();
+    }
+
+    // Apply filtering
+    List<Map<String, dynamic>> filteredCards = sortedCards;
+    if (_filterCriteria == 'priority') {
+      filteredCards = sortedCards.where((card) => card['priority'] == _filterValue).toList();
+    } else if (_filterCriteria == 'dueSoon') {
+      final now = DateTime.now();
+      filteredCards = sortedCards.where((card) {
+        final dueDate = DateTime.parse(card['due_date']);
+        return dueDate.difference(now).inDays <= 3;
+      }).toList();
+    } else if (_filterCriteria == 'status') {
+      filteredCards = sortedCards.where((card) => card['status'] == _filterValue).toList();
+    }
+
     // Group cards by status
     Map<String, List<Map<String, dynamic>>> groupedCards = {
       'TODO': [],
@@ -205,7 +425,7 @@ class BoardScreenState extends State<BoardScreen> {
       'DONE': [],
     };
 
-    for (var card in cards) {
+    for (var card in filteredCards) {
       String status = card['status'] ?? 'TODO';
       groupedCards[status]?.add(card);
     }
@@ -220,6 +440,11 @@ class BoardScreenState extends State<BoardScreen> {
         }
       }).toList(),
     );
+  }
+
+  int _comparePriority(String a, String b) {
+    final priorityOrder = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    return priorityOrder.indexOf(b) - priorityOrder.indexOf(a);
   }
 
   Widget _buildBoardColumn(String title, Color color, List<Map<String, dynamic>> columnCards, {bool isTodoList = false}) {
@@ -399,6 +624,8 @@ class BoardScreenState extends State<BoardScreen> {
               width: double.maxFinite,
               child: CardForm(
                 card: card,
+                projectStartDate: DateTime.parse(boardDetails['start_date']),
+                projectDueDate: DateTime.parse(boardDetails['due_date']),
                 onSubmit: (cardData) async {
                   try {
                     Map<String, dynamic> result;
@@ -500,8 +727,16 @@ class BoardScreenState extends State<BoardScreen> {
 class CardForm extends StatefulWidget {
   final Map<String, dynamic>? card;
   final Function(Map<String, dynamic>) onSubmit;
+  final DateTime projectStartDate;
+  final DateTime projectDueDate;
 
-  const CardForm({Key? key, this.card, required this.onSubmit}) : super(key: key);
+  const CardForm({
+    super.key,
+    this.card,
+    required this.projectStartDate,
+    required this.projectDueDate,
+    required this.onSubmit
+  });
 
   @override
   _CardFormState createState() => _CardFormState();
@@ -526,10 +761,10 @@ class _CardFormState extends State<CardForm> {
     _descriptionController = TextEditingController(text: widget.card?['description'] ?? '');
     _startDateTime = widget.card != null && widget.card!['start_date'] != null
         ? (DateTime.parse(widget.card!['start_date'] as String))
-        : DateTime.now();
+        : widget.projectStartDate;
     _dueDateTime = widget.card != null && widget.card!['due_date'] != null
         ? (DateTime.parse(widget.card!['due_date'] as String))
-        : DateTime.now().add(const Duration(days: 1));
+        : widget.projectDueDate;
     _startDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_startDateTime));
     _dueDateTimeController = TextEditingController(text: DateFormat('yyyy-MM-dd HH:mm').format(_dueDateTime));
     _priority = widget.card?['priority'] ?? 'LOW';
@@ -542,17 +777,17 @@ class _CardFormState extends State<CardForm> {
   }
 
 
-  Future<DateTime?> _selectDateTime(BuildContext context) async {
+  Future<DateTime?> _selectDateTime(BuildContext context, {required DateTime initialDate, required DateTime firstDate, required DateTime lastDate}) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2025),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
     if (pickedDate != null) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.now(),
+        initialTime: TimeOfDay.fromDateTime(initialDate),
       );
       if (pickedTime != null) {
         final dateTime = DateTime(
@@ -642,7 +877,7 @@ class _CardFormState extends State<CardForm> {
               ),
             ),
             onTap: () async {
-              final DateTime? pickedDateTime = await _selectDateTime(context);
+              final DateTime? pickedDateTime = await _selectDateTime(context, initialDate: widget.projectStartDate, firstDate: widget.projectStartDate, lastDate: widget.projectDueDate,);
               if (pickedDateTime != null) {
                 setState(() {
                   _startDateTime = pickedDateTime;
@@ -667,15 +902,13 @@ class _CardFormState extends State<CardForm> {
               ),
             ),
             onTap: () async {
-              final DateTime? pickedDateTime = await _selectDateTime(context);
+              final DateTime? pickedDateTime = await _selectDateTime(context, initialDate: _startDateTime, firstDate: _startDateTime, lastDate: widget.projectDueDate);
               if (pickedDateTime != null) {
                 if (pickedDateTime.isAfter(_startDateTime)) {
                   setState(() {
                     _dueDateTime = pickedDateTime;
                     _dueDateTimeController.text = DateFormat('yyyy-MM-dd HH:mm').format(pickedDateTime);
                   });
-                } else {
-                  _showSnackBar('Due date must be after start date');
                 }
               }
             },

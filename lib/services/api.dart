@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
@@ -6,15 +6,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'navigation.dart';
 import 'package:logger/logger.dart';
 
-const baseApiUrl =  'http://10.0.2.2:8000/api';
+var baseApiUrl =  defaultTargetPlatform == TargetPlatform.android ? 'http://10.0.2.2:8000/api' : 'http://127.0.0.1:8000/api';
 final Logger logger = Logger();
 
 class Api {
-  final String baseUrl;
+  final String baseUrl = baseApiUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final http.Client _client = http.Client();
 
-  Api({this.baseUrl = baseApiUrl});
+  Api();
 
   // Authentication methods
   Future<Map<String, dynamic>> signUp({required String email, required String password, required String firstName, required String lastName}) async {
@@ -52,6 +52,20 @@ class Api {
     //  logger.i(refreshToken);
 
       return {'success': true};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'error': e.message};
+      }
+      return {'success': false, 'error': 'An unexpected error occurred'};
+    }
+
+  }
+
+  Future<Map<String, dynamic>> getChannelUuid() async {
+    try {
+      final response = await get('/ws_auth_uuid/');
+
+      return {'success': true, 'uuid': response['uuid']};
     } catch (e) {
       if (e is ApiException) {
         return {'success': false, 'error': e.message};
@@ -242,6 +256,41 @@ class Api {
     }
   }
 
+
+  // Message operations
+  Future<List<Map<String, dynamic>>> fetchBoardMessages({required int boardId}) async {
+    try {
+      final response = await get('/messages/?board=$boardId');
+      //logger.i(response);
+      if (response is List) {
+        return response.cast<Map<String, dynamic>>();
+      } else {
+        throw ApiException('Unexpected response format');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException("Failed to fetch messages");
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchLatestMessages() async {
+    try {
+      final response = await get('/messages/latest_messages/');
+      if (response is List) {
+        return response.cast<Map<String, dynamic>>();
+      } else {
+        throw ApiException('Unexpected response format');
+      }
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException("Failed to fetch latest messages");
+    }
+  }
+
   // HTTP methods
   Future<dynamic> get(String endpoint) async {
     return await _sendRequest('GET', endpoint);
@@ -266,7 +315,7 @@ class Api {
   Future<dynamic> _sendRequest(String method, String endpoint, {Map<String, dynamic>? body}) async {
     String? token = await _storage.read(key: 'access');
     var headers = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
       if (token != null) 'Authorization': 'Bearer $token',
     };
     var url = Uri.parse('$baseUrl$endpoint');
@@ -334,7 +383,7 @@ class Api {
       } else if (response.statusCode >= 200 && response.statusCode < 300) {
         // Try to parse the response as JSON
         try {
-          return json.decode(response.body);
+            return json.decode(utf8.decode(response.bodyBytes));
         } catch (e) {
           // If parsing fails, return the raw body
           return response.body;

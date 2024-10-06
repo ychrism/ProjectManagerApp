@@ -78,7 +78,7 @@ class DashboardScreenState extends State<DashboardScreen> {
             key: ValueKey(_selectedBoardId),
           )
               : Center(child: Text('No board selected')),
-          ChatScreen(),
+          const MessageHome(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

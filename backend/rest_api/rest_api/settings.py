@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-_@fep#n#*$j*h(in#vjd^^tn(rw@eaervxt(ixt))nn99vnasg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.2.2', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 
 
@@ -41,12 +41,13 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_channels_jwt',
     'api',
     'corsheaders',
-#    'channels',
-#    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -64,6 +65,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'JSON_ENCODER': 'django.core.serializers.json.DjangoJSONEncoder'
 }
 
 
@@ -98,7 +100,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rest_api.wsgi.application'
 
-# ASGI_APPLICATION = 'rest_api.asgi.application'
+ASGI_APPLICATION = 'rest_api.asgi.application'
 
 #CHANNEL_LAYERS = {
 #    'default': {
@@ -108,6 +110,13 @@ WSGI_APPLICATION = 'rest_api.wsgi.application'
 #        },
 #    },
 #}
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 
 # Database
@@ -121,6 +130,7 @@ DATABASES = {
         'PASSWORD': 'Uneasily5-Scapegoat2-Mundane3-Anybody1-Unpleased5',
         'HOST': 'localhost',
         'PORT': '3306',
+        'OPTIONS': {'charset': 'utf8mb4'},
     }
 }
 
@@ -150,6 +160,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'api.TheUser'
 
+DEFAULT_CHARSET = 'utf-8'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

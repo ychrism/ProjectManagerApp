@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Board, Card, TheUser
+from .models import Board, Card, TheUser, Message
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class SignInSerializer(TokenObtainPairSerializer):
@@ -21,7 +21,7 @@ class SignInSerializer(TokenObtainPairSerializer):
 class TheUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheUser
-        fields =  ['first_name', 'last_name', 'email']
+        fields =  ['id', 'first_name', 'last_name', 'email']
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -31,6 +31,14 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = '__all__'
 
+
+class MessageSerializer(serializers.ModelSerializer):
+    board = BoardSerializer()
+    sent_by = TheUserSerializer()
+
+    class Meta:
+        model = Message
+        fields = '__all__'
 
 class CardSerializer(serializers.ModelSerializer):
     board =  serializers.PrimaryKeyRelatedField(queryset=Board.objects.all(), write_only=True)

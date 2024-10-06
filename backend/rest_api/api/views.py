@@ -1,18 +1,24 @@
 from rest_framework import viewsets
-from .models import Board, Card, TheUser
-from .serializers import BoardSerializer, CardSerializer, TheUserSerializer, SignInSerializer
+from .models import Board, Card, TheUser, Message
+from .serializers import BoardSerializer, CardSerializer, TheUserSerializer, SignInSerializer, MessageSerializer
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import IntegrityError
+from django.db.models import Max, Subquery, OuterRef
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 #from .consumers import CardTaskConsumer
 from rest_framework.decorators import action
+from uuid import uuid4
+from django.core.cache import cache
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 class SignInView(TokenObtainPairView):
@@ -174,3 +180,62 @@ class TheUserViewSet(viewsets.ModelViewSet):
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsMemberOfBoardOrAdmin]
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+
+    def get_queryset(self):
+        queryset = Message.objects.all()
+        board_id = self.request.query_params.get('board', None)
+        if board_id is not None:
+            queryset = queryset.filter(board_id=board_id)
+        return queryset
+
+    # def list(self, request):
+    #     queryset = self.get_queryset()
+    #     for message in queryset:
+    #         print(f"Message content from DB: {message.content}")
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     for item in serializer.data:
+    #         print(f"Serialized message content: {item['content']}")
+    #     return Response(serializer.data)
+
+    @action(detail=False, methods=['GET'])
+    def latest_messages(self, request):
+        try:
+            # Get all board IDs
+            board_ids = Board.objects.values_list('id', flat=True)
+            
+            # Initialize a list to store the latest messages
+            latest_messages = []
+            
+            # For each board, get the latest message
+            for board_id in board_ids:
+                latest_message = Message.objects.filter(board_id=board_id).order_by('-date_sent').first()
+                if latest_message:
+                    latest_messages.append(latest_message)
+            
+            serializer = self.get_serializer(latest_messages, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            print(str(e))
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+class AsgiValidateTokenView(APIView):
+    """
+        get:
+            API view for retrieving ticket to connect to websocket .
+    """
+
+    def get(self, request, *args, **kwargs):
+        ticket_uuid = uuid4()
+        user_id = request.user.id
+        cache.set(ticket_uuid, user_id, 600)
+
+        return Response({'uuid': ticket_uuid})

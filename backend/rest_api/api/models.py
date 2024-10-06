@@ -1,6 +1,9 @@
 from django.db import models
+from django.forms.models import model_to_dict
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.db.models.fields.files import ImageFieldFile, FieldFile
 from django.utils import timezone
+from datetime import datetime
 
 
 
@@ -45,6 +48,24 @@ class TheUser(AbstractBaseUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+    
+    def to_dict(self):
+        data = model_to_dict(self, fields=[field.name for field in self._meta.fields])
+        
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                # Convert datetime fields to ISO format strings
+                data[key] = value.isoformat()
+            elif isinstance(value, (ImageFieldFile, FieldFile)):
+                # Handle ImageFileField and FileField
+                if value:
+                    data[key] = value.url
+                else:
+                    data[key] = None
+        
+        return data
+
+
 def get_due_date(weeks=1):
     return timezone.now() + timezone.timedelta(weeks=10)
 
@@ -60,6 +81,22 @@ class Board(models.Model):
 
     def __str__(self):
         return self.name
+
+    def to_dict(self):
+        data = model_to_dict(self, fields=[field.name for field in self._meta.fields])
+        
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                # Convert datetime fields to ISO format strings
+                data[key] = value.isoformat()
+            elif isinstance(value, (ImageFieldFile, FieldFile)):
+                # Handle ImageFileField and FileField
+                if value:
+                    data[key] = value.url
+                else:
+                    data[key] = None
+        
+        return data
 
 
 class CardPriority(models.TextChoices):
@@ -100,25 +137,13 @@ class Card(models.Model):
 
 
 class Message(models.Model):
-    id = models.AutoField(primary_key=True)
-    date_sent = models.DateTimeField(auto_now_add=True)
+    board = models.ForeignKey(Board, related_name="messages", on_delete=models.CASCADE)
+    date_sent = models.DateTimeField(auto_now_add=True, blank=True)
     sent_by = models.ForeignKey(TheUser, related_name='sent_messages', on_delete=models.CASCADE)
-    received_by = models.ForeignKey(TheUser, related_name='received_messages', on_delete=models.CASCADE)
     content = models.TextField()
 
     def __str__(self):
-        return f"Message from {self.sent_by} to {self.received_by}"
-
-
-class GroupMessage(models.Model):
-    id = models.AutoField(primary_key=True)
-    date_sent = models.DateTimeField(auto_now_add=True)
-    sent_by = models.ForeignKey(TheUser, related_name='sent_group_messages', on_delete=models.CASCADE)
-    board = models.ForeignKey(Board, related_name='group_messages', on_delete=models.CASCADE)
-    content = models.TextField()
-
-    def __str__(self):
-        return f"Group message on {self.board}"
-
+        return f"{str(self.board)} {self.sent_by}"
+ 
 
 

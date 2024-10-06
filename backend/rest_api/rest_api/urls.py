@@ -21,7 +21,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView
 )
-from api.views import SignupView, SignInView
+from api.views import SignupView, SignInView, AsgiValidateTokenView
 
 
 urlpatterns = [
@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/signin/', SignInView.as_view(), name='get_token'),
     path('api/signin/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/signin/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/ws_auth_uuid/', AsgiValidateTokenView.as_view(), name='get_ws_auth_uuid')
 ]
 
 if settings.DEBUG:

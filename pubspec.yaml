@@ -46,6 +46,12 @@ dependencies:
   image_picker: ^1.1.2
   logger: ^2.4.0
   web_socket_channel: ^3.0.1
+  dio: ^5.7.0
+  iconsax: ^0.0.8
+  iconly: ^1.0.1
+  json_annotation: ^4.9.0
+  web_socket_client: ^0.1.5
+  emoji_picker_flutter: ^3.1.0
 
 dev_dependencies:
   flutter_test:
@@ -56,7 +62,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -68,7 +74,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  assets:
+    - assets/default_chat_background.png
+    - assets/default_photo_profile.jpg
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

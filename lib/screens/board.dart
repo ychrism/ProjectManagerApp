@@ -705,8 +705,8 @@ class BoardScreenState extends State<BoardScreen> {
   }
 
   Color _getDueDateColor(String dueDateString) {
-    DateTime date = DateTime.parse(dueDateString).toUtc().add(DateTime.now().timeZoneOffset);
-    DateTime now = DateTime.now().toUtc().add(DateTime.now().timeZoneOffset);
+    DateTime date = DateTime.parse(dueDateString);
+    DateTime now = DateTime.now();
     if (now.difference(date).inHours.abs() > 48) {
       return Colors.greenAccent;
     } else if (now.difference(date).inHours.abs() > 12 && now.difference(date).inHours.abs() != 0){
@@ -718,7 +718,7 @@ class BoardScreenState extends State<BoardScreen> {
 
   String _formatDate(String? dateString) {
     if (dateString == null) return 'No due date';
-    DateTime date = DateTime.parse(dateString).toUtc().add(DateTime.now().timeZoneOffset);
+    DateTime date = DateTime.parse(dateString);
     return '${date.day}/${date.month}';
   }
 
@@ -798,8 +798,7 @@ class _CardFormState extends State<CardForm> {
           pickedTime.hour,
           pickedTime.minute,
         );
-        final timezoneOffset = DateTime.now().timeZoneOffset;
-        return dateTime.toUtc().add(timezoneOffset);
+        return dateTime;
       }
     }
     return null;

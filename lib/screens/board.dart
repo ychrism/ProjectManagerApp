@@ -1,17 +1,22 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/api.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:logger/logger.dart';
+import 'package:web_socket_client/web_socket_client.dart';
 
+final Logger logger = Logger();
 
 class BoardScreen extends StatefulWidget {
   final int boardId;
   final Map<String, dynamic>? userProfile;
 
-  const BoardScreen({Key? key, required this.boardId, required this.userProfile}) : super(key: key);
+  const BoardScreen({super.key, required this.boardId, required this.userProfile});
 
   @override
   BoardScreenState createState() => BoardScreenState();
@@ -27,41 +32,117 @@ class BoardScreenState extends State<BoardScreen> {
   String _filterCriteria = 'none';
   String _filterValue = '';
   bool _sortAscending = true ;
-  late WebSocketChannel channel;
+  late Timer _updateTimer;
+  final String baseHost = defaultTargetPlatform == TargetPlatform.android
+      ? '10.0.2.2'
+      : '127.0.0.1';
+  WebSocket? _socket;
+  late String _userUuid;
+  final _timeout = const Duration(seconds: 10);
+  final _backoff = LinearBackoff(
+    initial: const Duration(seconds: 0),
+    increment: const Duration(seconds: 1),
+    maximum: const Duration(seconds: 5),
+  );
 
 
   @override
   void initState() {
     super.initState();
+
+
+    // Set up the Timer immediately
+    _updateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkAndUpdateCardStatuses();
+    });
+
     _fetchBoardDetailsAndCards();
-  //  _connectWebSocket();
-  }
-/*
-  @override
-  void dispose() {
-    channel.sink.close();
-    super.dispose();
+
+    // Fetch the channel UUID separately
+    _fetchChannelUuid().then((_) {
+      // Initialize WebSocket after UUID is fetched
+      _initWebSocket();
+    });
   }
 
-  void _connectWebSocket() {
-    final wsUrl = Uri.parse('ws://10.0.2.2:8000/ws/board/${widget.boardId}/');
-    channel = WebSocketChannel.connect(wsUrl);
-    channel.stream.listen((message) {
-      final data = jsonDecode(message);
-      if (data['type'] == 'card_status_update') {
-        _updateCardStatus(data['card_id'], data['new_status']);
+
+  Future<void> _fetchChannelUuid() async {
+    try {
+      final response = await _api.getChannelUuid();
+      if (response['success']) {
+        setState(() {
+          _userUuid = response['uuid'];
+          //logger.i(_userUuid.toString());
+        });
+      } else {
+        _showSnackBar('An error occurred: ${response['error']}');
+      }
+    } catch (e) {
+      _showSnackBar('Failed to fetch user channel authentication uuid: $e');
+    }
+  }
+
+  Future<void> _initWebSocket() async {
+    _socket = WebSocket(
+      Uri.parse(
+          'ws://$baseHost:8000/ws/cards_status_update/${widget.boardId}/?uuid=$_userUuid'),
+      timeout: _timeout,
+      backoff: _backoff,
+    );
+
+    _socket!.connection.listen((state) {
+      logger.i('WebSocket connection state: $state');
+    });
+
+    try {
+      await _socket!.connection
+          .firstWhere((state) => state is Connected)
+          .timeout(
+        const Duration(seconds: 5),
+        onTimeout: () =>
+        throw TimeoutException('WebSocket connection timeout'),
+      );
+      logger.i('WebSocket connected successfully');
+      _listenForNewMessages();
+    } catch (error) {
+      logger.e('WebSocket connection error: $error');
+      _showSnackBar('Failed to connect to chat. Please try again later.');
+    }
+  }
+
+  void _listenForNewMessages() {
+    _socket?.messages.listen((message) {
+      final newMessage = jsonDecode(message.toString());
+      logger.i(newMessage.toString());
+      if (newMessage['type'] == 'card_status_update') {
+        _handleCardStatusUpdate(newMessage);
       }
     });
   }
 
-  void _updateCardStatus (int cardId, String newStatus) {
-    setState(() {
-      final cardIndex = cards.indexWhere((card) => card['id'] == cardId);
-      if (cardIndex != -1) {
-        cards[cardIndex]['status'] = newStatus;
+  Future<void> _checkAndUpdateCardStatuses() async {
+    final now = DateTime.now();
+    bool needsUpdate = false;
+
+    for (var card in cards) {
+      if (card['status'] == 'TODO') {
+        final startDate = DateTime.parse(card['start_date']);
+        if (now.isAfter(startDate)) {
+          try {
+            await _api.updateCardStatus(cardId: card['id'], newStatus: 'DOING');
+            logger.i("Card status update request sent");
+            needsUpdate = true;
+          } catch (e) {
+            logger.e(
+                'Failed to update card ${card['id']} status: ${e.toString()}');
+          }
+        }
       }
-    });
-  }*/
+    }
+    if (needsUpdate) {
+      //_fetchBoardDetailsAndCards();
+    }
+  }
 
   @override
   void didUpdateWidget(BoardScreen oldWidget) {
@@ -97,6 +178,17 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  void _handleCardStatusUpdate(Map<String, dynamic> update) {
+    // Update your local state based on the received update
+    // For example:
+    setState(() {
+      final cardIndex = cards.indexWhere((card) => card['id'] == update['card_id']);
+      if (cardIndex != -1) {
+        cards[cardIndex]['status'] = update['new_status'];
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     /*Timer.periodic(Duration(minutes: 1), (_) {
@@ -105,18 +197,21 @@ class BoardScreenState extends State<BoardScreen> {
     return Scaffold(
       appBar: AppBar(
         elevation: 50,
-        title: Row(
-          children: [
-            Text(boardDetails.isNotEmpty ? boardDetails['name'] : 'Board', style: const TextStyle(color: Colors.white)),
-            //Icon(Icons.arrow_drop_down, color: Colors.white),
-          ],
-        ),
+        title: Text(boardDetails.isNotEmpty ? boardDetails['name'] : 'Board', style: const TextStyle(color: Colors.white)),
         actions: [
           IconButton(icon: const Icon(Icons.sort, color: Colors.white), onPressed:_showSortOptions),
           IconButton(icon: const Icon(Icons.filter_list_alt, color: Colors.white), onPressed:_showFilterOptions,),
         ],
         backgroundColor: Colors.black,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          color: Colors.white,
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        //automaticallyImplyLeading: true,
+
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -624,7 +719,7 @@ class BoardScreenState extends State<BoardScreen> {
             ],
           ),
           content: SingleChildScrollView(
-            child: Container(
+            child: SizedBox(
               width: double.maxFinite,
               child: CardForm(
                 card: card,
@@ -642,6 +737,7 @@ class BoardScreenState extends State<BoardScreen> {
                       Navigator.of(context).pop();
                       _showSnackBar(card == null ? 'Card created successfully' : 'Card updated successfully');
                       setState(() {
+                        _checkAndUpdateCardStatuses();
                         _fetchBoardDetailsAndCards();
                       });
                     } else {
@@ -725,6 +821,13 @@ class BoardScreenState extends State<BoardScreen> {
     return '${date.day}/${date.month}';
   }
 
+  @override
+  void dispose() {
+    _updateTimer.cancel();
+    _socket?.close();
+    super.dispose();
+  }
+
 }
 
 
@@ -743,7 +846,7 @@ class CardForm extends StatefulWidget {
   });
 
   @override
-  _CardFormState createState() => _CardFormState();
+  State<CardForm> createState() => _CardFormState();
 }
 
 class _CardFormState extends State<CardForm> {
@@ -807,12 +910,6 @@ class _CardFormState extends State<CardForm> {
     return null;
   }
 
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -955,7 +1052,6 @@ class _CardFormState extends State<CardForm> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              child: Text(widget.card == null ? 'Create Card' : 'Update Card'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -973,6 +1069,7 @@ class _CardFormState extends State<CardForm> {
                   });
                 }
               },
+              child: Text(widget.card == null ? 'Create Card' : 'Update Card'),
             ),
           )
         ],
@@ -989,13 +1086,13 @@ class EmailChipInputField extends StatefulWidget {
   final ValueChanged<List<String>> onEmailsChanged;
 
   const EmailChipInputField({
-    Key? key,
+    super.key,
     this.initialEmails = const [],
     required this.onEmailsChanged,
-  }) : super(key: key);
+  });
 
   @override
-  _EmailChipInputFieldState createState() => _EmailChipInputFieldState();
+  State<EmailChipInputField> createState() => _EmailChipInputFieldState();
 }
 
 class _EmailChipInputFieldState extends State<EmailChipInputField> {

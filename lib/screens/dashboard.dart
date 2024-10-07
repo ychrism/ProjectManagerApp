@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'workspace.dart';
-import 'board.dart';
 import 'chat.dart';
-import 'settings.dart';
 import '../services/api.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,7 +12,6 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  int? _selectedBoardId;
   final Api _api = Api();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Map<String, dynamic>? _userProfile;
@@ -43,7 +40,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (index == 3) {  // Profile index
+    if (index == 2) {  // Profile index
       _scaffoldKey.currentState?.openEndDrawer();
     } else {
       setState(() {
@@ -52,12 +49,6 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void updateSelectedBoard(int boardId) {
-    setState(() {
-      _selectedBoardId = boardId;
-      _selectedIndex = 1;
-    });
-  }
 
   Future<void> _handleLogout() async {
     await _api.logout();
@@ -73,14 +64,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          WorkspaceScreen(onBoardSelected: updateSelectedBoard, userProfile: _userProfile!),
-          _selectedBoardId != null
-              ? BoardScreen(
-            boardId: _selectedBoardId!,
-            key: ValueKey(_selectedBoardId),
-            userProfile: _userProfile!,
-          )
-              : Center(child: Text('No board selected')),
+          WorkspaceScreen(userProfile: _userProfile!),
           const MessageHome(),
         ],
       ),
@@ -89,7 +73,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: _onItemTapped,
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.workspaces_sharp), label: 'Workspaces'),
+          //BottomNavigationBarItem(icon: Icon(Icons.workspaces_sharp), label: 'Workspaces'),
           BottomNavigationBarItem(icon: Icon(Icons.view_kanban), label: 'Boards'),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chats'),
           BottomNavigationBarItem(icon: Icon(Icons.person_2), label: 'Profil'),

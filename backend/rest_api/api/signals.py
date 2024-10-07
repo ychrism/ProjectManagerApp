@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver, Signal
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Message, Board
+from .models import Message, Card
 
 
 @receiver(post_save, sender=Message)
@@ -29,4 +29,20 @@ def message_post_save(sender, instance, created, **kwargs):
                 }
             )
 
-    
+
+@receiver(post_save, sender=Card)
+def card_status_updated(sender, instance, **kwargs):
+    if kwargs.get('update_fields') and 'status' in kwargs['update_fields']:
+        channel_layer = get_channel_layer()
+        board_name = f"board_{instance.board.id}"
+        
+        async_to_sync(channel_layer.group_send)(
+            board_name,
+            {
+                "type": "card_status_update",
+                "message": {
+                    "card_id": instance.id,
+                    "new_status": instance.status,
+                }
+            }
+        )

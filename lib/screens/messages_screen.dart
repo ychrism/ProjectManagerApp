@@ -16,9 +16,9 @@ class BoardChatScreen extends StatefulWidget {
   final Map<String, dynamic> board;
 
   const BoardChatScreen({
-    Key? key,
+    super.key,
     required this.board,
-  }) : super(key: key);
+  });
 
   @override
   State<BoardChatScreen> createState() => _BoardChatScreenState();

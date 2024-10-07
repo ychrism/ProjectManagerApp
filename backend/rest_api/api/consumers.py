@@ -84,6 +84,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'date_sent': message.date_sent.isoformat()
         }
 
+class CardTaskConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        logger.info(f"Connect attempt received from: {self.scope['path']}")
+        self.board_id = self.scope['url_route']['kwargs'].get('board_id')
+        
+        if self.board_id:
+            self.board_name = f"board_{self.board_id}"
+            await self.channel_layer.group_add(self.board_name, self.channel_name)
+        
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        logger.info(f"Disconnected with code: {close_code}")
+        if self.board_id:
+            await self.channel_layer.group_discard(self.board_name, self.channel_name)
+
+
+    async def receive(self, text_data):
+        # We don't expect to receive messages from the client in this consumer
+        pass
+
+    async def card_status_update(self, event):
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps(event['message'], cls=CombinedEncoder))
+
 
 class MessageHomeConsumer(AsyncWebsocketConsumer):
     async def connect(self):

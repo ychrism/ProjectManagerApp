@@ -135,7 +135,6 @@ class CardViewSet(viewsets.ModelViewSet):
         try:
             response = super().update(request, *args, **kwargs)
             self.update_board_progress(response.data['board_details']['id'])
-            print (response.data)
             return response
         except PermissionDenied as e:
             return Response({"err": str(e)}, status=status.HTTP_403_FORBIDDEN)

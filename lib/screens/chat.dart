@@ -14,7 +14,7 @@ import 'messages_screen.dart';
 final Logger logger = Logger();
 
 class MessageHome extends StatefulWidget {
-  const MessageHome({Key? key}) : super(key: key);
+  const MessageHome({super.key});
 
   @override
   State<MessageHome> createState() => _MessageHomeState();
@@ -288,6 +288,7 @@ class _MessageHomeState extends State<MessageHome> {
                   _showDialog(context);
                 },
                 backgroundColor: Colors.lightBlue,
+                heroTag: null,
                 child: Icon(Icons.message, color: Colors.white),
               ),
             ),

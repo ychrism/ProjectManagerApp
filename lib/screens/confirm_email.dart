@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 
 class ConfirmEmailScreen extends StatefulWidget {
@@ -44,11 +46,11 @@ class ConfirmEmailScreenState extends State<ConfirmEmailScreen> {
                 // Navigate to login after confirmation
                 Navigator.pushNamed(context, '/sign-in');
               },
-              child: Text('Go to Login'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.black,
               ),
+              child: Text('Go to Login'),
             ),
           ],
         ),

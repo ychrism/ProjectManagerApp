@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'board.dart';
@@ -9,10 +10,9 @@ import 'package:path/path.dart' as path;
 import '../services/api.dart';
 
 class WorkspaceScreen extends StatefulWidget {
-  final Function(int) onBoardSelected;
   final Map<String, dynamic>? userProfile;
 
-  const WorkspaceScreen({Key? key, required this.onBoardSelected, this.userProfile}) : super(key: key);
+  const WorkspaceScreen({super.key, this.userProfile});
 
   @override
   WorkspaceScreenState createState() => WorkspaceScreenState();
@@ -77,7 +77,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                   ],
                 ),
                 content: SingleChildScrollView(
-                  child: Container(
+                  child: SizedBox(
                     width: double.maxFinite,
                     child: BoardForm(
                       boardToEdit: boardToEdit,
@@ -132,27 +132,25 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return Container(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showBoardPopup(context, boardToEdit: board);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete),
-                title: Text('Delete'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteBoard(board['id']);
-                },
-              ),
-            ],
-          ),
+        return Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Edit'),
+              onTap: () {
+                Navigator.pop(context);
+                _showBoardPopup(context, boardToEdit: board);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Delete'),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteBoard(board['id']);
+              },
+            ),
+          ],
         );
       },
     );
@@ -203,7 +201,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
           IconButton(icon: Icon(Icons.share, color: Colors.white,), onPressed: () {}),
         ],
         backgroundColor: Colors.black,
-        automaticallyImplyLeading: false,
+        //automaticallyImplyLeading: false,
       ),
       body: Stack(
         children: [
@@ -221,8 +219,16 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
               itemBuilder: (context, index) {
                 final board = boards[index];
                 return GestureDetector(
-                  onTap: () {
-                    widget.onBoardSelected(board['id']);
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) =>
+                            BoardScreen(
+                              boardId: board['id'],
+                              userProfile: widget.userProfile!,
+                            ),
+                      ),
+                    );
                   },
                   onLongPress: () {
                     if (widget.userProfile!['is_admin']) {
@@ -264,6 +270,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
               backgroundColor: Colors.lightBlue,
               label: Text('Add Board', style: TextStyle(color: Colors.white, fontSize: 20)),
               icon: Icon(Icons.add, color: Colors.white),
+              heroTag: null,
             ),
           ),
         ],
@@ -277,7 +284,7 @@ class BoardForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
   final Map<String, dynamic>? boardToEdit;
 
-  const BoardForm({Key? key, required this.onSubmit, this.boardToEdit}) : super(key: key);
+  const BoardForm({super.key, required this.onSubmit, this.boardToEdit});
 
   @override
   BoardFormState createState() => BoardFormState();

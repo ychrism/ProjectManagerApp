@@ -34,7 +34,7 @@ ALLOWED_HOSTS = ['*']
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=5),
     "ROTATE_REFRESH_TOKENS": True,
 }
 
@@ -102,21 +102,20 @@ WSGI_APPLICATION = 'rest_api.wsgi.application'
 
 ASGI_APPLICATION = 'rest_api.asgi.application'
 
-#CHANNEL_LAYERS = {
-#    'default': {
-#        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#        'CONFIG': {
-#            "hosts": [('127.0.0.1', 6379)],
-#        },
-#    },
-#}
-
-
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
+   'default': {
+       'BACKEND': 'channels_redis.core.RedisChannelLayer',
+       'CONFIG': {
+           "hosts": [('127.0.0.1', 6379)],
+       },
+   },
 }
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer"
+#     }
+# }
 
 
 # Database
@@ -159,8 +158,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = 'api.TheUser'
-
-DEFAULT_CHARSET = 'utf-8'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

@@ -52,6 +52,7 @@ dependencies:
   json_annotation: ^4.9.0
   web_socket_client: ^0.1.5
   emoji_picker_flutter: ^3.1.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -107,3 +108,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  fonts:
+    - family: Comfortaa
+      fonts:
+        - asset: fonts/Comfortaa-Light.ttf
+        - asset: fonts/Comfortaa-Regular.ttf
+        - asset: fonts/Comfortaa-Medium.ttf
+        - asset: fonts/Comfortaa-SemiBold.ttf
+        - asset: fonts/Comfortaa-Bold.ttf
+          style: italic

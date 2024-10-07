@@ -3,9 +3,10 @@ import 'package:project_manager_app/screens/dashboard.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/sign_up.dart';
 import 'screens/sign_in.dart';
-import 'screens/confirm_email.dart';
 import 'services/navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+//import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const ProjectManagerApp());
@@ -20,6 +21,7 @@ class ProjectManagerApp extends StatelessWidget {
       navigatorKey: navigationService.navigatorKey,
       title: 'Project Manager',
       theme: ThemeData(
+        fontFamily: 'Comfortaa',
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white.withOpacity(0.9),
         appBarTheme: const AppBarTheme(
@@ -113,7 +115,6 @@ class ProjectManagerApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/sign-up': (context) => const SignUpScreen(),
         '/sign-in': (context) => SignInScreen(),
-        '/confirm-email': (context) => ConfirmEmailScreen(),
         '/dashboard': (context) => DashboardScreen(),
       },
     );
@@ -130,11 +131,23 @@ class StartupController extends StatefulWidget {
 
 class StartupControllerState extends State<StartupController> {
   bool _isFirstTime = true;
+  bool _loggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _checkFirstTime();
+    _checkLoggedIn();
+  }
+
+  Future<void> _checkLoggedIn() async {
+    final FlutterSecureStorage storage = const FlutterSecureStorage();
+    String? refreshToken = await storage.read(key: 'refresh');
+    if (refreshToken != null) {
+      setState(() {
+        _loggedIn = true;
+      });
+    }
   }
 
   Future<void> _checkFirstTime() async {
@@ -154,8 +167,10 @@ class StartupControllerState extends State<StartupController> {
   Widget build(BuildContext context) {
     if (_isFirstTime) {
       return const WelcomeScreen();
-    } else {
-      return SignInScreen();
+    } else if (_loggedIn){
+      return const DashboardScreen();
+    }else {
+      return const SignInScreen();
     }
   }
 }

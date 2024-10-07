@@ -66,16 +66,19 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return _userProfile == null
+    ? Center(child: CircularProgressIndicator())
+    : Scaffold(
       key: _scaffoldKey,
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          WorkspaceScreen(onBoardSelected: updateSelectedBoard),
+          WorkspaceScreen(onBoardSelected: updateSelectedBoard, userProfile: _userProfile!),
           _selectedBoardId != null
               ? BoardScreen(
             boardId: _selectedBoardId!,
             key: ValueKey(_selectedBoardId),
+            userProfile: _userProfile!,
           )
               : Center(child: Text('No board selected')),
           const MessageHome(),
@@ -93,9 +96,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       endDrawer: Drawer(
-        child: _userProfile == null
-            ? Center(child: CircularProgressIndicator())
-            : ListView(
+        child:  ListView(
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(

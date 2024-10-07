@@ -9,8 +9,9 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 class BoardScreen extends StatefulWidget {
   final int boardId;
+  final Map<String, dynamic>? userProfile;
 
-  const BoardScreen({Key? key, required this.boardId}) : super(key: key);
+  const BoardScreen({Key? key, required this.boardId, required this.userProfile}) : super(key: key);
 
   @override
   BoardScreenState createState() => BoardScreenState();
@@ -477,16 +478,17 @@ class BoardScreenState extends State<BoardScreen> {
                   var card = columnCards[index];
                   return _buildTaskCard(
                     card: card,
-                    onTap: () => _showCardDialog(context, card: card),
+                    onTap: () => widget.userProfile!['is_admin'] ? _showCardDialog(context, card: card) : {},
                   );
                 } else {
-                  if (isTodoList) {
+                  if (isTodoList && widget.userProfile!['is_admin']) {
                     return ListTile(
                       title: const Text('+ Add a card', style: TextStyle(color: Colors.blue)),
                       onTap: () => _showCardDialog(context),
                     );
-                  };
+                  }
                 }
+                return null;
               },
             ),
           ),
@@ -529,26 +531,27 @@ class BoardScreenState extends State<BoardScreen> {
                         size: 20,
                         color: Colors.greenAccent),
                         onPressed: () => card['status'] != 'DONE' ? _toggleTaskCompletion(card) : {}),
-                    IconButton(icon: const Icon(Icons.delete_forever,
-                        size: 20,
-                        color: Colors.red),
-                        onPressed: () async {
-                          try {
-                            Map<String, dynamic> result;
-                            result = await _api.deleteCard(
-                              cardId: card['id'],
-                            );
-                            if (result['success']) {
-                              setState(() {
-                                _fetchBoardDetailsAndCards();
-                              });
-                            } else {
-                              _showSnackBar(result['error']);
+                    if(widget.userProfile!['is_admin'])
+                      IconButton(icon: const Icon(Icons.delete_forever,
+                          size: 20,
+                          color: Colors.red),
+                          onPressed: () async {
+                            try {
+                              Map<String, dynamic> result;
+                              result = await _api.deleteCard(
+                                cardId: card['id'],
+                              );
+                              if (result['success']) {
+                                setState(() {
+                                  _fetchBoardDetailsAndCards();
+                                });
+                              } else {
+                                _showSnackBar(result['error']);
+                              }
+                            } catch (e) {
+                              _showSnackBar('Failed to update card status: ${e.toString()}');
                             }
-                          } catch (e) {
-                            _showSnackBar('Failed to update card status: ${e.toString()}');
-                          }
-                        }),
+                          }),
                     IconButton(icon: Icon(card['status'] == 'BLOCKED' ? Icons.lock_reset : Icons.lock_clock,
                         size: 20,
                         color: card['status'] != 'DONE' ? Colors.red[300] : Colors.grey),

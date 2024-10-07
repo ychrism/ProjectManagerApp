@@ -10,8 +10,9 @@ import '../services/api.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final Function(int) onBoardSelected;
+  final Map<String, dynamic>? userProfile;
 
-  const WorkspaceScreen({Key? key, required this.onBoardSelected}) : super(key: key);
+  const WorkspaceScreen({Key? key, required this.onBoardSelected, this.userProfile}) : super(key: key);
 
   @override
   WorkspaceScreenState createState() => WorkspaceScreenState();
@@ -35,6 +36,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
       await Permission.photos.request();
     }
   }
+
 
   Future<void> _fetchBoards() async {
     setState(() {
@@ -223,7 +225,9 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                     widget.onBoardSelected(board['id']);
                   },
                   onLongPress: () {
-                    _showContextMenu(context, board);
+                    if (widget.userProfile!['is_admin']) {
+                      _showContextMenu(context, board);
+                    }
                   },
                   child: Column(
                     children: [
@@ -249,7 +253,8 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
               },
             ),
           ),
-          Positioned(
+          if (widget.userProfile!['is_admin'] == true)
+            Positioned(
             bottom: 16.0,
             right: 16.0,
             child: FloatingActionButton.extended(

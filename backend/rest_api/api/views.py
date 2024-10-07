@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from .permissions import *
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import IntegrityError
-from django.db.models import Max, Subquery, OuterRef
+from django.db.models import Max, Subquery, OuterRef, Q
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from uuid import uuid4
 from django.core.cache import cache
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,12 @@ class BoardViewSet(viewsets.ModelViewSet):
     permission_classes = [IsMemberOfBoardOrAdmin]
     queryset = Board.objects.all()
     serializer_class = BoardSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_admin:
+            return Board.objects.all()
+        return Board.objects.filter(members__in=[user])
 
     def create(self, request, *args, **kwargs):
         try:
@@ -99,7 +106,12 @@ class CardViewSet(viewsets.ModelViewSet):
     serializer_class = CardSerializer
 
     def get_queryset(self):
-        queryset = Card.objects.all()
+        user = self.request.user
+        if user.is_admin:
+            queryset = Card.objects.all()
+        else:
+            queryset = Card.objects.filter(members__in=[user])
+
         board_id = self.request.query_params.get('board', None)
         if board_id is not None:
             queryset = queryset.filter(board_id=board_id)
@@ -183,36 +195,34 @@ class TheUserViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsMemberOfBoardOrAdmin]
+    permission_classes = [IsBoardMemberOrAdminForMessage]
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
 
     def get_queryset(self):
-        queryset = Message.objects.all()
+        user = self.request.user
+        if user.is_admin:
+            queryset = Message.objects.all()
+        else:
+            queryset = Message.objects.filter(board__members__in=[user])
+
         board_id = self.request.query_params.get('board', None)
         if board_id is not None:
             queryset = queryset.filter(board_id=board_id)
         return queryset
 
-    # def list(self, request):
-    #     queryset = self.get_queryset()
-    #     for message in queryset:
-    #         print(f"Message content from DB: {message.content}")
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     for item in serializer.data:
-    #         print(f"Serialized message content: {item['content']}")
-    #     return Response(serializer.data)
 
     @action(detail=False, methods=['GET'])
     def latest_messages(self, request):
         try:
-            # Get all board IDs
-            board_ids = Board.objects.values_list('id', flat=True)
+            user = request.user
+            if user.is_admin:
+                board_ids = Board.objects.values_list('id', flat=True)
+            else:
+                board_ids = Board.objects.filter(members__in=[user]).values_list('id', flat=True)
             
-            # Initialize a list to store the latest messages
             latest_messages = []
             
-            # For each board, get the latest message
             for board_id in board_ids:
                 latest_message = Message.objects.filter(board_id=board_id).order_by('-date_sent').first()
                 if latest_message:
@@ -221,8 +231,8 @@ class MessageViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(latest_messages, many=True)
             return Response(serializer.data)
         except Exception as e:
-            print(str(e))
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 

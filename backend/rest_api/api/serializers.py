@@ -21,7 +21,7 @@ class SignInSerializer(TokenObtainPairSerializer):
 class TheUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = TheUser
-        fields =  ['id', 'first_name', 'last_name', 'email']
+        fields =  ['id', 'first_name', 'last_name', 'is_admin', 'email']
 
 
 class BoardSerializer(serializers.ModelSerializer):

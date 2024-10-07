@@ -96,10 +96,11 @@ class Api {
   Future<List<Map<String, dynamic>>> fetchBoards() async {
     try {
       final response = await get('/boards/');
+      //logger.i(response)
       if (response is List) {
         return response.cast<Map<String, dynamic>>();
       } else {
-        throw ApiException('Unexpected response format');
+        return [response as Map<String, dynamic>];
       }
     } catch (e) {
       if (e is ApiException) {
@@ -190,7 +191,7 @@ class Api {
       if (response is List) {
         return response.cast<Map<String, dynamic>>();
       } else {
-        throw ApiException('Unexpected response format');
+        return [response as Map<String, dynamic>];
       }
     } catch (e) {
       if (e is ApiException) {
@@ -265,7 +266,7 @@ class Api {
       if (response is List) {
         return response.cast<Map<String, dynamic>>();
       } else {
-        throw ApiException('Unexpected response format');
+        return [response as Map<String, dynamic>];
       }
     } catch (e) {
       if (e is ApiException) {
@@ -281,7 +282,7 @@ class Api {
       if (response is List) {
         return response.cast<Map<String, dynamic>>();
       } else {
-        throw ApiException('Unexpected response format');
+        return [response as Map<String, dynamic>];
       }
     } catch (e) {
       if (e is ApiException) {

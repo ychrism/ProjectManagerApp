@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver, Signal
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Message, Card
+from .models import Message, Card, TheUser
 
 
 @receiver(post_save, sender=Message)
@@ -23,6 +23,18 @@ def message_post_save(sender, instance, created, **kwargs):
             print(f"In signals: {member.id}")
             async_to_sync(channel_layer.group_send)(
                 f"user_{member.id}_latest_messages",
+                {
+                    "type": "latest_message_update",
+                    "message": message_data
+                }
+            )
+
+         # Send to all admin users
+        admin_users = TheUser.objects.filter(is_admin=True)
+        for admin in admin_users:
+            if admin not in board.members.all():
+                async_to_sync(channel_layer.group_send)(
+                f"user_{admin.id}_latest_messages",
                 {
                     "type": "latest_message_update",
                     "message": message_data

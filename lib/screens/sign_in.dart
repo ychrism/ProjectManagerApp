@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
 
+// This class defines the sign-in screen of the app
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -11,16 +12,19 @@ class SignInScreen extends StatefulWidget {
 }
 
 class SignInScreenState extends State<SignInScreen> {
+  // Controllers for text input fields
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // State variable to toggle password visibility
   bool _obscurePassword = true;
+  // Instance of API service
   final Api _apiService = Api();
 
-  void _signIn() async{
+  // Method to handle sign in
+  void _signIn() async {
     final email = _emailController.text;
     final password = _passwordController.text;
 
-    // Handle sign-in logic here (API authentication)
     try {
       final result = await _apiService.login(
         email: email,
@@ -36,11 +40,14 @@ class SignInScreenState extends State<SignInScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An unexpected error occurred. Please contact administrator.')),
+        const SnackBar(
+            content: Text(
+                'An unexpected error occurred. Please contact administrator.')),
       );
     }
   }
 
+  // Method to navigate to sign up screen
   void _signUp() {
     Navigator.pushReplacementNamed(context, '/sign-up');
   }
@@ -51,6 +58,7 @@ class SignInScreenState extends State<SignInScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+        // Gradient background
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.blue.shade100, Colors.blue.shade300],
@@ -65,6 +73,7 @@ class SignInScreenState extends State<SignInScreen> {
               maxHeight: 400, // Maximum height of the form
             ),
             padding: const EdgeInsets.all(24.0),
+            // Form container decoration
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.white, Colors.blue.shade50],
@@ -85,6 +94,7 @@ class SignInScreenState extends State<SignInScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Sign In title
                 Text(
                   'Sign In',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -94,6 +104,7 @@ class SignInScreenState extends State<SignInScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
+                // Email field
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -113,6 +124,7 @@ class SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // Password field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -130,6 +142,7 @@ class SignInScreenState extends State<SignInScreen> {
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     prefixIcon: Icon(Icons.lock),
+                    // Toggle password visibility
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -146,6 +159,8 @@ class SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                // Sign In button
+                // Sign In button
                 ElevatedButton(
                   onPressed: _signIn,
                   style: ElevatedButton.styleFrom(
@@ -155,8 +170,14 @@ class SignInScreenState extends State<SignInScreen> {
                   ),
                   child: const Text('Sign In'),
                 ),
+                // Sign Up link
                 ListTile(
-                  title: const Text('Sign up', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                  title: const Text(
+                    'Sign up',
+                    style: TextStyle(
+                        color: Colors.blue, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
                   onTap: () {
                     _signUp();
                   },

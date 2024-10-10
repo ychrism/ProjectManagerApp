@@ -107,7 +107,8 @@ class CardTaskConsumer(AsyncWebsocketConsumer):
 
     async def card_status_update(self, event):
         # Send message to WebSocket
-        await self.send(text_data=json.dumps(event['message'], cls=CombinedEncoder))
+        print(f'new event: {event}')
+        await self.send(text_data=json.dumps(event, cls=CombinedEncoder))
 
 
 class MessageHomeConsumer(AsyncWebsocketConsumer):
@@ -131,7 +132,8 @@ class MessageHomeConsumer(AsyncWebsocketConsumer):
 
     async def latest_message_update(self, event):
         # Send message to WebSocket
-        await self.send(text_data=json.dumps(event['message'], cls=CombinedEncoder))
+        print(f'new event: {event}')
+        await self.send(text_data=json.dumps(event, cls=CombinedEncoder))
 
 
 class EchoConsumer(AsyncWebsocketConsumer):

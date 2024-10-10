@@ -1,14 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/api.dart';
-import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:web_socket_client/web_socket_client.dart';
+import '../services/websocket.dart';
 
 final Logger logger = Logger();
 
@@ -31,98 +28,48 @@ class BoardScreenState extends State<BoardScreen> {
   String _sortCriteria = 'none';
   String _filterCriteria = 'none';
   String _filterValue = '';
-  bool _sortAscending = true ;
+  bool _sortAscending = true;
   late Timer _updateTimer;
-  final String baseHost = defaultTargetPlatform == TargetPlatform.android
-      ? '10.0.2.2'
-      : '127.0.0.1';
-  WebSocket? _socket;
-  late String _userUuid;
-  final _timeout = const Duration(seconds: 10);
-  final _backoff = LinearBackoff(
-    initial: const Duration(seconds: 0),
-    increment: const Duration(seconds: 1),
-    maximum: const Duration(seconds: 5),
-  );
-
+  late WebSocketService _webSocketService; // Declare WebSocketService
 
   @override
   void initState() {
     super.initState();
 
-
     // Set up the Timer immediately
-    _updateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    _updateTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       _checkAndUpdateCardStatuses();
     });
 
     _fetchBoardDetailsAndCards();
 
-    // Fetch the channel UUID separately
-    _fetchChannelUuid().then((_) {
-      // Initialize WebSocket after UUID is fetched
-      _initWebSocket();
-    });
+    // Initialize WebSocketService
+    _webSocketService = WebSocketService(channelPath: '/ws/cards_status_update/${widget.boardId}/');
+    _initWebSocket();
   }
 
-
-  Future<void> _fetchChannelUuid() async {
-    try {
-      final response = await _api.getChannelUuid();
-      if (response['success']) {
-        setState(() {
-          _userUuid = response['uuid'];
-          //logger.i(_userUuid.toString());
-        });
-      } else {
-        _showSnackBar('An error occurred: ${response['error']}');
-      }
-    } catch (e) {
-      _showSnackBar('Failed to fetch user channel authentication uuid: $e');
-    }
-  }
-
+  // Initialize WebSocket connection
   Future<void> _initWebSocket() async {
-    _socket = WebSocket(
-      Uri.parse(
-          'ws://$baseHost:8000/ws/cards_status_update/${widget.boardId}/?uuid=$_userUuid'),
-      timeout: _timeout,
-      backoff: _backoff,
-    );
-
-    _socket!.connection.listen((state) {
-      logger.i('WebSocket connection state: $state');
-    });
-
     try {
-      await _socket!.connection
-          .firstWhere((state) => state is Connected)
-          .timeout(
-        const Duration(seconds: 5),
-        onTimeout: () =>
-        throw TimeoutException('WebSocket connection timeout'),
-      );
-      logger.i('WebSocket connected successfully');
+      await _webSocketService.initWebSocket();
       _listenForNewMessages();
-    } catch (error) {
-      logger.e('WebSocket connection error: $error');
-      _showSnackBar('Failed to connect to chat. Please try again later.');
+    } catch (e) {
+      _showSnackBar('Failed to connect to WebSocket. Please try again later.');
     }
   }
 
+  // Listen for new messages from WebSocket
   void _listenForNewMessages() {
-    _socket?.messages.listen((message) {
-      final newMessage = jsonDecode(message.toString());
-      logger.i(newMessage.toString());
+    _webSocketService.listenForNewMessages().listen((newMessage) {
       if (newMessage['type'] == 'card_status_update') {
-        _handleCardStatusUpdate(newMessage);
+        _handleCardStatusUpdate(newMessage['message']);
       }
     });
   }
 
+  // Method to check start date time of TO-DO tasks and update status to DOING is time is up.
   Future<void> _checkAndUpdateCardStatuses() async {
     final now = DateTime.now();
-    bool needsUpdate = false;
 
     for (var card in cards) {
       if (card['status'] == 'TODO') {
@@ -131,7 +78,6 @@ class BoardScreenState extends State<BoardScreen> {
           try {
             await _api.updateCardStatus(cardId: card['id'], newStatus: 'DOING');
             logger.i("Card status update request sent");
-            needsUpdate = true;
           } catch (e) {
             logger.e(
                 'Failed to update card ${card['id']} status: ${e.toString()}');
@@ -139,19 +85,11 @@ class BoardScreenState extends State<BoardScreen> {
         }
       }
     }
-    if (needsUpdate) {
-      //_fetchBoardDetailsAndCards();
-    }
+
   }
 
-  @override
-  void didUpdateWidget(BoardScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.boardId != widget.boardId) {
-      _fetchBoardDetailsAndCards();
-    }
-  }
 
+  // Method to fetch current board details and its cards
   Future<void> _fetchBoardDetailsAndCards() async {
     setState(() {
       isLoading = true;
@@ -172,15 +110,15 @@ class BoardScreenState extends State<BoardScreen> {
     }
   }
 
+  // Method to show information in popup at bottom
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
   }
 
+  // Update card status local state based on the received update
   void _handleCardStatusUpdate(Map<String, dynamic> update) {
-    // Update your local state based on the received update
-    // For example:
     setState(() {
       final cardIndex = cards.indexWhere((card) => card['id'] == update['card_id']);
       if (cardIndex != -1) {
@@ -191,9 +129,6 @@ class BoardScreenState extends State<BoardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    /*Timer.periodic(Duration(minutes: 1), (_) {
-      channel.sink.add(jsonEncode({'type': 'check_card_status'}));
-    });*/
     return Scaffold(
       appBar: AppBar(
         elevation: 50,
@@ -203,6 +138,7 @@ class BoardScreenState extends State<BoardScreen> {
           IconButton(icon: const Icon(Icons.filter_list_alt, color: Colors.white), onPressed:_showFilterOptions,),
         ],
         backgroundColor: Colors.black,
+        // back button to go back to boards list. By default automaticallyImplyLeading = true do the job but we had to change color to white
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           color: Colors.white,
@@ -210,11 +146,10 @@ class BoardScreenState extends State<BoardScreen> {
             Navigator.of(context).pop();
           },
         ),
-        //automaticallyImplyLeading: true,
 
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator()) // If data still loading, print a circular progress indicator else the expected content
           : Container(
         decoration: boardDetails.isNotEmpty
         ? BoxDecoration(
@@ -242,6 +177,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Method to build avatars of board members
   Widget _buildMemberAvatars() {
     return Container(
       height: 45,
@@ -259,6 +195,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Method to build single user avatar
   Widget _buildAvatar(Color color, {String? label}) {
     return Container(
       decoration: BoxDecoration(
@@ -273,6 +210,7 @@ class BoardScreenState extends State<BoardScreen> {
   }
 
 
+  // Method to show board progress
   Widget _buildProgressBar() {
     double progress = boardDetails['progress'];
     return Container(
@@ -297,6 +235,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Sort options method
   void _showSortOptions() {
     showDialog(
       context: context,
@@ -330,6 +269,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Sort direction options (ascending and descending) method
   void _showSortDirectionOptions(String criteria) {
     Navigator.pop(context);
     showDialog(
@@ -369,6 +309,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Filter options method
   void _showFilterOptions() {
     showDialog(
       context: context,
@@ -487,6 +428,8 @@ class BoardScreenState extends State<BoardScreen> {
     Navigator.pop(context);
   }
 
+
+  // Method to build board categories list (TODO, DOING, BLOCKED, and DONE)
   Widget _buildBoardList() {
     // Apply sorting
     List<Map<String, dynamic>> sortedCards = List.from(cards);
@@ -539,11 +482,13 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Compare priority for sorting
   int _comparePriority(String a, String b) {
     final priorityOrder = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     return priorityOrder.indexOf(b) - priorityOrder.indexOf(a);
   }
 
+  // Build a column for each status category
   Widget _buildBoardColumn(String title, Color color, List<Map<String, dynamic>> columnCards, {bool isTodoList = false}) {
     return Container(
       width: 400,
@@ -593,6 +538,7 @@ class BoardScreenState extends State<BoardScreen> {
   }
 
 
+  // Build individual task card
   Widget _buildTaskCard({required Map<String, dynamic> card, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -665,6 +611,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Toggle task completion status
   Future<void> _toggleTaskCompletion(Map<String, dynamic> card) async {
     try {
       Map<String, dynamic> result;
@@ -685,6 +632,7 @@ class BoardScreenState extends State<BoardScreen> {
     }
   }
 
+  // Toggle card status between BLOCKED and DOING
   Future<void> _toggleStrugglingOrNot(Map<String, dynamic> card, String newStatus) async {
     try {
       await _api.updateCardStatus(
@@ -700,6 +648,7 @@ class BoardScreenState extends State<BoardScreen> {
   }
 
 
+  // Show dialog for creating or editing a card
   void _showCardDialog(BuildContext context, {Map<String, dynamic>? card}) {
     showDialog(
       context: context,
@@ -756,6 +705,7 @@ class BoardScreenState extends State<BoardScreen> {
   }
 
 
+  // Build due date widget
   Widget _buildDueDate (String stringDueDate) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -772,6 +722,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Build due label widget
   Widget _buildLabel(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -783,6 +734,7 @@ class BoardScreenState extends State<BoardScreen> {
     );
   }
 
+  // Get color based on priority
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'critical':
@@ -796,13 +748,15 @@ class BoardScreenState extends State<BoardScreen> {
     }
   }
 
-  Color _getMemberColor({required String firstAndLastName}) {
+  /*Color _getMemberColor({required String firstAndLastName}) {
     if (!membersColors.containsKey(firstAndLastName)) {
       membersColors[firstAndLastName] = Colors.primaries[Random().nextInt(Colors.primaries.length)];
     }
     return membersColors[firstAndLastName]!;
-  }
+  }*/
 
+
+  // Get color based on due date
   Color _getDueDateColor(String dueDateString) {
     DateTime date = DateTime.parse(dueDateString);
     DateTime now = DateTime.now();
@@ -815,6 +769,7 @@ class BoardScreenState extends State<BoardScreen> {
     }
   }
 
+  // Format due dates user-friendly
   String _formatDate(String? dateString) {
     if (dateString == null) return 'No due date';
     DateTime date = DateTime.parse(dateString);
@@ -824,13 +779,14 @@ class BoardScreenState extends State<BoardScreen> {
   @override
   void dispose() {
     _updateTimer.cancel();
-    _socket?.close();
+    _webSocketService.close(); // Close WebSocket connection
     super.dispose();
   }
 
 }
 
 
+// Card creation or editing form
 class CardForm extends StatefulWidget {
   final Map<String, dynamic>? card;
   final Function(Map<String, dynamic>) onSubmit;

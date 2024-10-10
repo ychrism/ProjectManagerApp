@@ -43,8 +43,8 @@ def message_post_save(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=Card)
-def card_status_updated(sender, instance, **kwargs):
-    if kwargs.get('update_fields') and 'status' in kwargs['update_fields']:
+def card_status_updated(sender, instance, created, **kwargs):
+    try:
         channel_layer = get_channel_layer()
         board_name = f"board_{instance.board.id}"
         
@@ -58,3 +58,6 @@ def card_status_updated(sender, instance, **kwargs):
                 }
             }
         )
+        print(f"Message sent successfully to group {board_name}")
+    except Exception as e:
+        print(f"Error sending card update message: {str(e)}")

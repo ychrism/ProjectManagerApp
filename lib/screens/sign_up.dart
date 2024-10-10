@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:email_validator/email_validator.dart';
 import '../services/api.dart';
 
+// This class defines the sign-up screen of the app
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -12,15 +13,19 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class SignUpScreenState extends State<SignUpScreen> {
+  // Form key for form validation
   final _formKey = GlobalKey<FormState>();
+  // Controllers for text input fields
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Instance of API service
   final Api _api = Api();
 
+  // Method to validate password
   bool _isPasswordValid(String password) {
     if (password.length < 12) return false;
     if (!password.contains(RegExp(r'[A-Z]'))) return false;
@@ -30,14 +35,15 @@ class SignUpScreenState extends State<SignUpScreen> {
     return true;
   }
 
+  // Method to handle sign up
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
       try {
         final result = await _api.signUp(
-          firstName: _firstNameController.text,
-          lastName: _lastNameController.text,
-          email: _emailController.text,
-          password: _passwordController.text
+            firstName: _firstNameController.text,
+            lastName: _lastNameController.text,
+            email: _emailController.text,
+            password: _passwordController.text
         );
 
         if (result['success']) {
@@ -59,6 +65,7 @@ class SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  // Method to navigate to sign in screen
   void _signIn() {
     Navigator.pushReplacementNamed(context, '/sign-in');
   }
@@ -69,6 +76,7 @@ class SignUpScreenState extends State<SignUpScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+        // Gradient background
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.blue.shade100, Colors.blue.shade300],
@@ -83,6 +91,7 @@ class SignUpScreenState extends State<SignUpScreen> {
               maxHeight: 700, // Maximum height of the form
             ),
             padding: const EdgeInsets.all(24.0),
+            // Form container decoration
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.white, Colors.blue.shade50],
@@ -104,6 +113,7 @@ class SignUpScreenState extends State<SignUpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Sign Up title
                   Text(
                     'Sign Up',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -113,6 +123,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
+                  // First Name field
                   _buildTextField(
                     controller: _firstNameController,
                     prefixIcon: Icon(Icons.person),
@@ -125,6 +136,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // Last Name field
                   _buildTextField(
                     controller: _lastNameController,
                     labelText: 'Last Name',
@@ -137,6 +149,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // Email field
                   _buildTextField(
                     controller: _emailController,
                     labelText: 'Email',
@@ -153,6 +166,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // Password field
                   _buildTextField(
                     controller: _passwordController,
                     labelText: 'Password',
@@ -169,6 +183,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // Confirm Password field
                   _buildTextField(
                     controller: _confirmPasswordController,
                     labelText: 'Confirm Password',
@@ -185,6 +200,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
+                  // Sign Up button
                   ElevatedButton(
                     onPressed: _signUp,
                     style: ElevatedButton.styleFrom(
@@ -195,8 +211,9 @@ class SignUpScreenState extends State<SignUpScreen> {
                     child: const Text('Sign Up'),
                   ),
                   const Padding(
-                      padding: EdgeInsets.only(top: 16),
+                    padding: EdgeInsets.only(top: 16),
                   ),
+                  // Sign In link
                   ListTile(
                     title: const Text('Sign in', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
                     onTap: () {
@@ -212,6 +229,7 @@ class SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // Helper method to build text fields
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,

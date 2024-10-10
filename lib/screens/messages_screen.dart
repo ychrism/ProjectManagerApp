@@ -1,23 +1,24 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:logger/logger.dart';
-import 'package:web_socket_client/web_socket_client.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/foundation.dart' as foundation;
 
 import '../services/api.dart';
+import '../services/websocket.dart';
 
 final Logger logger = Logger();
 
 class BoardChatScreen extends StatefulWidget {
   final Map<String, dynamic> board;
+  final Map<String, dynamic>? userProfile;
 
   const BoardChatScreen({
     super.key,
     required this.board,
+    required this.userProfile,
   });
 
   @override
@@ -27,17 +28,9 @@ class BoardChatScreen extends StatefulWidget {
 class _BoardChatScreenState extends State<BoardChatScreen> {
   final TextEditingController _sendMessageController = TextEditingController();
   bool isLoading = true;
-  Map<String, dynamic> _userProfile = {};
   final Api _api = Api();
   late final int _boardId;
-  WebSocket? _socket;
-  late String _userUuid;
-  final _timeout = const Duration(seconds: 10);
-  final _backoff = LinearBackoff(
-    initial: const Duration(seconds: 0),
-    increment: const Duration(seconds: 1),
-    maximum: const Duration(seconds: 5),
-  );
+  late WebSocketService _webSocketService; // Use WebSocketService instead of direct WebSocket
   List<Map<String, dynamic>> _messages = [];
   final ScrollController _scrollController = ScrollController();
   bool _showEmoji = false;
@@ -45,30 +38,17 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile();
     _boardId = widget.board['id'];
     _fetchMessages();
-    _fetchChannelUuid();
+    _initWebSocket();
   }
 
-  Future<void> _fetchUserProfile() async {
-    try {
-      final response = await _api.fetchCurrentUser();
-      setState(() {
-        _userProfile = response;
-        //logger.i('User infos: $_userProfile');
-      });
-    } catch (e) {
-      _showSnackBar('Failed to fetch user profile: $e');
-    }
-  }
-
+  // Fetch initial messages
   Future<void> _fetchMessages() async {
     try {
       final fetchedMessages = await _api.fetchBoardMessages(boardId: _boardId);
       setState(() {
         _messages = fetchedMessages;
-        //logger.i(_messages.sublist(_messages.length - 5).toString());
         isLoading = false;
       });
       _scrollToBottom();
@@ -80,59 +60,35 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
     }
   }
 
-  Future<void> _fetchChannelUuid() async {
-    try {
-      final response = await _api.getChannelUuid();
-      if (response['success']) {
-        setState(() {
-          _userUuid = response['uuid'];
-          //logger.i(_userUuid.toString());
-        });
-        _initWebSocket();
-      } else {
-        _showSnackBar('An error occurred: ${response['error']}');
-      }
-    } catch (e) {
-      _showSnackBar('Failed to fetch user channel authentication uuid: $e');
-    }
-  }
-
+  // Initialize WebSocket connection
   Future<void> _initWebSocket() async {
-    _socket = WebSocket(
-      Uri.parse(foundation.defaultTargetPlatform == foundation.TargetPlatform.android
-                ? 'ws://10.0.2.2:8000/ws/chat/$_boardId/?uuid=$_userUuid'
-                : 'ws://127.0.0.1:8000/ws/chat/$_boardId/?uuid=$_userUuid'
-      ),
-      timeout: _timeout,
-      backoff: _backoff,
-    );
-
-    _socket!.connection.listen((state) {
-      logger.i('WebSocket connection state: $state');
-    });
-
+    _webSocketService = WebSocketService(channelPath: '/ws/chat/$_boardId/');
     try {
-      await _socket!.connection
-          .firstWhere((state) => state is Connected)
-          .timeout(
-        const Duration(seconds: 5),
-        onTimeout: () =>
-        throw TimeoutException('WebSocket connection timeout'),
-      );
-      logger.i('WebSocket connected successfully');
-      setState(() {}); // Trigger a rebuild to show messages
-    } catch (error) {
-      logger.e('WebSocket connection error: $error');
+      await _webSocketService.initWebSocket();
+      _listenForNewMessages();
+    } catch (e) {
       _showSnackBar('Failed to connect to chat. Please try again later.');
     }
   }
 
+  // Listen for new messages from WebSocket
+  void _listenForNewMessages() {
+    _webSocketService.listenForNewMessages().listen((newMessage) {
+      setState(() {
+        _messages.add(newMessage);
+      });
+      _scrollToBottom();
+    });
+  }
+
+  // Show a snack bar with an error message
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
   }
 
+  // Scroll to the bottom of the chat
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -148,116 +104,107 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(widget.board['pic']),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 10.0),
-              child: Text(
-                widget.board['name'] as String,
-                style: const TextStyle(color: Colors.black87, fontSize: 18.0),
+        appBar: AppBar(
+          title: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(widget.board['pic']),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 10.0),
+                child: Text(
+                  widget.board['name'] as String,
+                  style: const TextStyle(color: Colors.black87, fontSize: 18.0),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            PopupMenuButton(
+              itemBuilder: (context) => <PopupMenuEntry>[
+                const PopupMenuItem(child: Text('Block')),
+              ],
+              icon: const Icon(Icons.more_vert),
             ),
           ],
         ),
-        actions: [
-          PopupMenuButton(
-            itemBuilder: (context) => <PopupMenuEntry>[
-              const PopupMenuItem(child: Text('Block')),
-            ],
-            icon: const Icon(Icons.more_vert),
+        body: Container(
+          decoration: const BoxDecoration(
+              image: DecorationImage(
+                  image: AssetImage('assets/default_chat_background.png'),
+                  fit: BoxFit.cover
+              )
           ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/default_chat_background.png'),
-            fit: BoxFit.cover
-          )
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : StreamBuilder(
-                stream: _socket?.messages,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    _messages.add(jsonDecode(snapshot.data.toString()));
-                    _scrollToBottom();
-                  }
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final boardMessage = _messages[index];
-                      return _buildMessageTile(boardMessage);
-                    },
-                  );
-                },
-              ),
-            ),
-            _buildMessageInput(),
-            Offstage(
-              offstage: !_showEmoji,
-              child: SizedBox(
-                height: 250,
-                child: EmojiPicker(
-                  onEmojiSelected: (Category? category, Emoji emoji) {
-                    _onEmojiSelected(emoji);
+          child: Column(
+            children: [
+              Expanded(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                  controller: _scrollController,
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final boardMessage = _messages[index];
+                    return _buildMessageTile(boardMessage);
                   },
-                  onBackspacePressed: _onBackspacePressed,
-                  config: Config(
-                    emojiViewConfig: EmojiViewConfig(
-                      columns: 7,
-                      emojiSizeMax: 32 * (foundation.defaultTargetPlatform == foundation.TargetPlatform.iOS ? 1.30 : 1.0),
-                      verticalSpacing: 0,
-                      horizontalSpacing: 0,
-                      gridPadding: EdgeInsets.zero,
-                      replaceEmojiOnLimitExceed: false,
-                      noRecents: const Text(
-                        'No Recents',
-                        style: TextStyle(fontSize: 20, color: Colors.black26),
-                        textAlign: TextAlign.center,
+                ),
+              ),
+              _buildMessageInput(),
+              Offstage(
+                offstage: !_showEmoji,
+                child: SizedBox(
+                  height: 250,
+                  child: EmojiPicker(
+                    onEmojiSelected: (Category? category, Emoji emoji) {
+                      _onEmojiSelected(emoji);
+                    },
+                    onBackspacePressed: _onBackspacePressed,
+                    config: Config(
+                      emojiViewConfig: EmojiViewConfig(
+                        columns: 7,
+                        emojiSizeMax: 32 * (foundation.defaultTargetPlatform == foundation.TargetPlatform.iOS ? 1.30 : 1.0),
+                        verticalSpacing: 0,
+                        horizontalSpacing: 0,
+                        gridPadding: EdgeInsets.zero,
+                        replaceEmojiOnLimitExceed: false,
+                        noRecents: const Text(
+                          'No Recents',
+                          style: TextStyle(fontSize: 20, color: Colors.black26),
+                          textAlign: TextAlign.center,
+                        ),
+                        loadingIndicator: const SizedBox.shrink(),
+                        buttonMode: ButtonMode.MATERIAL,
+                        recentsLimit: 28,
+                        backgroundColor: const Color(0xFFF2F2F2),
                       ),
-                      loadingIndicator: const SizedBox.shrink(),
-                      buttonMode: ButtonMode.MATERIAL,
-                      recentsLimit: 28,
-                      backgroundColor: const Color(0xFFF2F2F2),
+                      skinToneConfig: const SkinToneConfig(
+                        enabled: true,
+                        dialogBackgroundColor: Colors.white,
+                        indicatorColor: Colors.grey,
+                      ),
+                      categoryViewConfig: const CategoryViewConfig(
+                        tabIndicatorAnimDuration: kTabScrollDuration,
+                        categoryIcons: CategoryIcons(),
+                        initCategory: Category.RECENT,
+                        iconColor: Colors.grey,
+                        iconColorSelected: Colors.blue,
+                        backspaceColor: Colors.blue,
+                      ),
+                      checkPlatformCompatibility: true,
                     ),
-                    skinToneConfig: const SkinToneConfig(
-                      enabled: true,
-                      dialogBackgroundColor: Colors.white,
-                      indicatorColor: Colors.grey,
-                    ),
-                    categoryViewConfig: const CategoryViewConfig(
-                      tabIndicatorAnimDuration: kTabScrollDuration,
-                      categoryIcons: CategoryIcons(),
-                      initCategory: Category.RECENT,
-                      iconColor: Colors.grey,
-                      iconColorSelected: Colors.blue,
-                      backspaceColor: Colors.blue,
-                    ),
-                    checkPlatformCompatibility: true,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      )
+            ],
+          ),
+        )
     );
   }
 
-
+  // Build individual message tile
   Widget _buildMessageTile(Map<String, dynamic> boardMessage) {
-    final isCurrentUser = _userProfile.isNotEmpty &&
-        boardMessage['sent_by']['id'] == _userProfile['id'];
+    final isCurrentUser = widget.userProfile!.isNotEmpty &&
+        boardMessage['sent_by']['id'] == widget.userProfile!['id'];
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -319,6 +266,7 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
     );
   }
 
+  // Build message input field
   Widget _buildMessageInput() {
     return Container(
       color: Colors.white,
@@ -356,12 +304,14 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
     );
   }
 
+  // Toggle emoji keyboard visibility
   void _toggleEmojiKeyboard() {
     setState(() {
       _showEmoji = !_showEmoji;
     });
   }
 
+  // Handle emoji selection
   void _onEmojiSelected(Emoji emoji) {
     _sendMessageController
       ..text += emoji.emoji
@@ -369,6 +319,7 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
           TextPosition(offset: _sendMessageController.text.length));
   }
 
+  // Handle backspace in emoji keyboard
   void _onBackspacePressed() {
     _sendMessageController
       ..text = _sendMessageController.text.characters.skipLast(1).toString()
@@ -376,21 +327,22 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
           TextPosition(offset: _sendMessageController.text.length));
   }
 
+  // Send a message
   void _sendMessage() {
     if (_sendMessageController.text.isNotEmpty) {
       final message = {
         'board': _boardId,
-        'sent_by': _userProfile['id'],
+        'sent_by': widget.userProfile!['id'],
         'content': _sendMessageController.text
       };
-      _socket!.send(jsonEncode(message));
+      _webSocketService.sendMessage(message);
       _sendMessageController.clear();
     }
   }
 
   @override
   void dispose() {
-    _socket?.close();
+    _webSocketService.close();
     _sendMessageController.dispose();
     _scrollController.dispose();
     super.dispose();

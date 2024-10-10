@@ -1,20 +1,22 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:web_socket_client/web_socket_client.dart';
 
 import '../services/api.dart';
 import 'messages_screen.dart';
+import '../services/websocket.dart';
 
+// Initialize a logger for debugging
 final Logger logger = Logger();
 
+/// MessageHome widget represents the main screen for displaying chat messages
 class MessageHome extends StatefulWidget {
-  const MessageHome({super.key});
+  final Map<String, dynamic>? userProfile;
+
+  const MessageHome({super.key, required this.userProfile});
 
   @override
   State<MessageHome> createState() => _MessageHomeState();
@@ -24,40 +26,31 @@ class _MessageHomeState extends State<MessageHome> {
   final Api _api = Api();
   List<Map<String, dynamic>> latestMessages = [];
   bool isLoading = true;
-  Map<String, dynamic> _userProfile = {};
   List<Map<String, dynamic>> boards = [];
-  final String baseHost = defaultTargetPlatform == TargetPlatform.android
-      ? '10.0.2.2'
-      : '127.0.0.1';
-  WebSocket? _socket;
-  late String _userUuid;
-  final _timeout = const Duration(seconds: 10);
-  final _backoff = LinearBackoff(
-    initial: const Duration(seconds: 0),
-    increment: const Duration(seconds: 1),
-    maximum: const Duration(seconds: 5),
-  );
+
+  late WebSocketService _webSocketService;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile();
+    _initializeWebSocket();
     _fetchBoardsAndLatestMessages();
-    _fetchChannelUuid();
   }
 
-  Future<void> _fetchUserProfile() async {
+  Future<void> _initializeWebSocket() async {
+    _webSocketService = WebSocketService(
+        channelPath: '/ws/latest_message_update/'
+    );
+
     try {
-      final response = await _api.fetchCurrentUser();
-      setState(() {
-        _userProfile = response;
-        //logger.i('User infos: $_userProfile');
-      });
+      await _webSocketService.initWebSocket();
+      _listenForNewMessages();
     } catch (e) {
-      _showSnackBar('Failed to fetch user profile: $e');
+      _showSnackBar('Failed to connect to chat. Please try again later.');
     }
   }
 
+  /// Fetch boards and latest messages from the API
   Future<void> _fetchBoardsAndLatestMessages() async {
     try {
       final fetchedMessagesData = await _api.fetchLatestMessages();
@@ -76,65 +69,25 @@ class _MessageHomeState extends State<MessageHome> {
     }
   }
 
-  Future<void> _fetchChannelUuid() async {
-    try {
-      final response = await _api.getChannelUuid();
-      if (response['success']) {
-        setState(() {
-          _userUuid = response['uuid'];
-          //logger.i(_userUuid.toString());
-        });
-        _initWebSocket();
-      } else {
-        _showSnackBar('An error occurred: ${response['error']}');
-      }
-    } catch (e) {
-      _showSnackBar('Failed to fetch user channel authentication uuid: $e');
-    }
-  }
-
-  Future<void> _initWebSocket() async {
-    _socket = WebSocket(
-      Uri.parse(
-          'ws://$baseHost:8000/ws/latest_message_update/?uuid=$_userUuid'),
-      timeout: _timeout,
-      backoff: _backoff,
-    );
-
-    _socket!.connection.listen((state) {
-      logger.i('WebSocket connection state: $state');
-    });
-
-    try {
-      await _socket!.connection
-          .firstWhere((state) => state is Connected)
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () =>
-                throw TimeoutException('WebSocket connection timeout'),
-          );
-      logger.i('WebSocket connected successfully');
-      _listenForNewMessages();
-    } catch (error) {
-      logger.e('WebSocket connection error: $error');
-      _showSnackBar('Failed to connect to chat. Please try again later.');
-    }
-  }
-
+  /// Listen for new messages from the WebSocket
   void _listenForNewMessages() {
-    _socket?.messages.listen((message) {
-      final newMessage = jsonDecode(message.toString());
-      logger.i(newMessage.toString());
-      _updateLatestMessage(newMessage);
+    _webSocketService.listenForNewMessages().listen((newMessage) {
+      if (newMessage['type'] == 'latest_message_update') {
+        _updateLatestMessage(newMessage['message']);
+      }
+    }, onError: (error) {
+      logger.e('Error in WebSocket stream: $error');
+      _showSnackBar('Error receiving messages. Please try again later.');
     });
   }
 
+  /// Update the latest message in the state
   void _updateLatestMessage(Map<String, dynamic> newMessage) {
     setState(() {
       int index = latestMessages
           .indexWhere((msg) => msg['board']['id'] == newMessage['board']['id']);
       newMessage['board']['pic'] =
-          'http://$baseHost:8000${newMessage['board']['pic']}';
+      'http://${_webSocketService.baseHost}:8000${newMessage['board']['pic']}';
       if (index != -1) {
         latestMessages[index] = newMessage;
       } else {
@@ -145,12 +98,14 @@ class _MessageHomeState extends State<MessageHome> {
     });
   }
 
+  /// Show a snackbar with the given message
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
   }
 
+  /// Show a dialog to create a new chat
   void _showDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -182,12 +137,12 @@ class _MessageHomeState extends State<MessageHome> {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (BuildContext context) => BoardChatScreen(
-                          board: board,
+                            board: board,
+                            userProfile: widget.userProfile!
                         ),
                       ),
                     );
                     _fetchBoardsAndLatestMessages();
-                    _fetchChannelUuid();
                   },
                   leading: CircleAvatar(
                     backgroundImage: NetworkImage(board['pic']),
@@ -228,58 +183,59 @@ class _MessageHomeState extends State<MessageHome> {
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    itemCount: latestMessages.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      var message = latestMessages[index];
-                      var board = message['board'];
-                      var isCurrentUser = _userProfile.isNotEmpty &&
-                          message['sent_by']['id'] == _userProfile['id'];
-                      return ListTile(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  BoardChatScreen(
-                                board: board,
-                              ),
+              itemCount: latestMessages.length,
+              itemBuilder: (BuildContext context, int index) {
+                var message = latestMessages[index];
+                var board = message['board'];
+                var isCurrentUser = widget.userProfile!.isNotEmpty &&
+                    message['sent_by']['id'] == widget.userProfile!['id'];
+                return ListTile(
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (BuildContext context) =>
+                            BoardChatScreen(
+                              board: board,
+                              userProfile: widget.userProfile!,
                             ),
-                          );
-                          _fetchBoardsAndLatestMessages();
-                          _fetchChannelUuid();
-                        },
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(board['pic']),
-                          radius: 30.0,
-                        ),
-                        title: Text(
-                          board['name'] as String,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16.0),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              message['content'] ?? "No messages",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              isCurrentUser
-                                  ? 'You'
-                                  : message['sent_by']['first_name'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: Text(DateFormat('yy-MM-dd HH:mm')
-                            .format(DateTime.parse(message['date_sent']))),
-                      );
-                    },
+                      ),
+                    );
+                    _fetchBoardsAndLatestMessages();
+                    _initializeWebSocket();
+                  },
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(board['pic']),
+                    radius: 30.0,
                   ),
+                  title: Text(
+                    board['name'] as String,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16.0),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        message['content'] ?? "No messages",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        isCurrentUser
+                            ? 'You'
+                            : message['sent_by']['first_name'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Text(DateFormat('yy-MM-dd HH:mm')
+                      .format(DateTime.parse(message['date_sent']))),
+                );
+              },
+            ),
             Positioned(
               bottom: 16.0,
               right: 16.0,
@@ -298,7 +254,7 @@ class _MessageHomeState extends State<MessageHome> {
 
   @override
   void dispose() {
-    _socket?.close();
+    _webSocketService.close();
     super.dispose();
   }
 }

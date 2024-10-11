@@ -41,7 +41,7 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
-    'daphne',
+    'daphne', # always on top
     'channels',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -101,6 +101,18 @@ TEMPLATES = [
 WSGI_APPLICATION = 'rest_api.wsgi.application'
 
 ASGI_APPLICATION = 'rest_api.asgi.application'
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
 
 CHANNEL_LAYERS = {
    'default': {
@@ -184,3 +196,51 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True  # For development only
+
+# In your settings.py file
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'django.server': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+        },
+        'django.channels': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',  # Set to DEBUG to see all messages
+            'propagate': False,
+        },
+        'api': {  # Replace with your app's name
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',  # Set to DEBUG to see all messages
+            'propagate': False,
+        },
+    },
+}

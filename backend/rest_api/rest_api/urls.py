@@ -34,5 +34,6 @@ urlpatterns = [
     path('api/ws_auth_uuid/', AsgiValidateTokenView.as_view(), name='get_ws_auth_uuid')
 ]
 
+# TODO: Image serving in production mode
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

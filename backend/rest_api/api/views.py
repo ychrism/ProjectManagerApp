@@ -12,14 +12,10 @@ from django.db.models import Max, Subquery, OuterRef, Q
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-#from .consumers import CardTaskConsumer
 from rest_framework.decorators import action
 from uuid import uuid4
 from django.core.cache import cache
-import logging
 
-
-logger = logging.getLogger(__name__)
 
 
 class SignInView(TokenObtainPairView):
@@ -86,19 +82,6 @@ class BoardViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"err": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-"""
-    @action(detail=True, methods=['post'])
-    def check_card_status(self, request, pk=None):
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.send)(
-            'card-tasks',
-            {
-                'type': 'check_card_status',
-                'board_id': pk
-            }
-        )
-        return Response({'status': 'Card status check initiated'})
-"""
 
 
 class CardViewSet(viewsets.ModelViewSet):
@@ -243,8 +226,10 @@ class AsgiValidateTokenView(APIView):
     """
 
     def get(self, request, *args, **kwargs):
+        
         ticket_uuid = uuid4()
         user_id = request.user.id
-        cache.set(ticket_uuid, user_id, 600)
+        cache_key = f"websocket_auth:{ticket_uuid}"
+        cache.set(cache_key, user_id, 86400) # timeout 24h
 
         return Response({'uuid': ticket_uuid})

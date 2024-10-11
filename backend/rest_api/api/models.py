@@ -20,6 +20,7 @@ class TheUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+    # TODO: Seperate admin from superuser. Every user will have admin rights in their own workspaces
     def create_admin(self, email, first_name, last_name, password=None):
         user = self.create_user(
             email,
@@ -28,6 +29,7 @@ class TheUserManager(BaseUserManager):
             last_name=last_name
         )
         user.is_admin = True
+        user.is_staff = True
         user.save(using=self._db)
         return user
 
@@ -39,6 +41,7 @@ class TheUser(AbstractBaseUser):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
 
     objects = TheUserManager()
 

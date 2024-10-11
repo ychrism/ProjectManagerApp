@@ -3,10 +3,15 @@ from django.dispatch import receiver, Signal
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Message, Card, TheUser
+import logging
 
+
+logger = logging.getLogger('api')
 
 @receiver(post_save, sender=Message)
 def message_post_save(sender, instance, created, **kwargs):
+    # This function is called whenever a Message instance is saved. 
+    # latest_message_update in related Consumer is called went this type of message is sent by signal
     if created:
         channel_layer = get_channel_layer()
         board = instance.board
@@ -20,7 +25,6 @@ def message_post_save(sender, instance, created, **kwargs):
         
         # Send to all members of the board
         for member in board.members.all():
-            print(f"In signals: {member.id}")
             async_to_sync(channel_layer.group_send)(
                 f"user_{member.id}_latest_messages",
                 {
@@ -44,6 +48,8 @@ def message_post_save(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Card)
 def card_status_updated(sender, instance, created, **kwargs):
+    # This function is called whenever a Message instance is saved. 
+    # card_status_update in related Consumer is called went this type of message is sent by signal
     try:
         channel_layer = get_channel_layer()
         board_name = f"board_{instance.board.id}"
@@ -58,6 +64,6 @@ def card_status_updated(sender, instance, created, **kwargs):
                 }
             }
         )
-        print(f"Message sent successfully to group {board_name}")
+        logger.debug(f"Message sent successfully to group {board_name}")
     except Exception as e:
-        print(f"Error sending card update message: {str(e)}")
+        logger.error(f"Error sending card update message: {str(e)}")

@@ -39,7 +39,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         _userProfile = response;
       });
     } catch (e) {
-      _showSnackBar('Failed to fetch user profile: $e');
+      _showSnackBar('Failed to fetch user profile');
     }
   }
 

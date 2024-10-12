@@ -356,7 +356,7 @@ class Api {
         }
       }
     } catch (e) {
-      throw ApiException('Error refreshing token: $e');
+      throw ApiException('Error refreshing token');
     }
     return false;
   }

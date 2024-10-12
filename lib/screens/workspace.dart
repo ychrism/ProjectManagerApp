@@ -52,7 +52,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
       setState(() {
         isLoading = false;
       });
-      _showSnackBar('Failed to fetch boards: ${e.toString()}');
+      _showSnackBar('Failed to fetch boards');
     }
   }
 
@@ -112,10 +112,10 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
                               _fetchBoards(); // Refresh the board list
                             });
                           } else {
-                            _showSnackBar(result['error']);
+                            _showSnackBar('Failed to create/update board');
                           }
                         } catch (e) {
-                          _showSnackBar('An error occurred. Please try again.');
+                          _showSnackBar('An error occurred when creating/updating board.');
                         }
                       },
                     ),
@@ -165,7 +165,7 @@ class WorkspaceScreenState extends State<WorkspaceScreen> {
           _fetchBoards(); // Refresh the board list
         });
       } else {
-        _showSnackBar(result['error']);
+        _showSnackBar('Failed to delete board');
       }
     } catch (e) {
       _showSnackBar(

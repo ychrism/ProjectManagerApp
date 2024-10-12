@@ -76,7 +76,7 @@ class _MessageHomeState extends State<MessageHome> {
         _updateLatestMessage(newMessage['message']);
       }
     }, onError: (error) {
-      logger.e('Error in WebSocket stream: $error');
+      logger.e('Error in WebSocket stream');
       _showSnackBar('Error receiving messages. Please try again later.');
     });
   }

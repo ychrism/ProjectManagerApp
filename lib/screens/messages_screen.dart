@@ -56,7 +56,7 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
       setState(() {
         isLoading = false;
       });
-      _showSnackBar('Failed to fetch messages: $e');
+      _showSnackBar('Failed to fetch messages');
     }
   }
 

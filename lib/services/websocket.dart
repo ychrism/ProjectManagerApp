@@ -32,10 +32,10 @@ class WebSocketService {
       if (response['success']) {
         userUuid = response['uuid'];
       } else {
-        throw Exception('Failed to fetch UUID: ${response['error']}');
+        throw Exception('Failed to fetch UUID');
       }
     } catch (e) {
-      logger.e('Failed to fetch user channel authentication uuid: $e');
+      logger.e('Failed to fetch user channel authentication uuid');
       rethrow;
     }
   }
@@ -65,7 +65,7 @@ class WebSocketService {
       );
       logger.i('WebSocket connected successfully');
     } catch (error) {
-      logger.e('WebSocket connection error: $error');
+      logger.e('WebSocket connection error');
       rethrow;
     }
   }
@@ -77,7 +77,7 @@ class WebSocketService {
     }
     return _socket!.messages.map((message) {
       final newMessage = jsonDecode(message.toString());
-      logger.i(newMessage.toString());
+      //logger.i(newMessage.toString());
       return newMessage;
     });
   }
@@ -88,7 +88,7 @@ class WebSocketService {
       throw StateError('WebSocket not initialized. Call initWebSocket() first.');
     }
     _socket!.send(jsonEncode(message));
-    logger.i('Sent message: $message');
+    //logger.i('Sent message: $message');
   }
 
   /// Close the WebSocket connection

@@ -80,7 +80,7 @@ class BoardScreenState extends State<BoardScreen> {
             logger.i("Card status update request sent");
           } catch (e) {
             logger.e(
-                'Failed to update card ${card['id']} status: ${e.toString()}');
+                'Failed to update card ${card['id']} status');
           }
         }
       }
@@ -106,7 +106,7 @@ class BoardScreenState extends State<BoardScreen> {
       setState(() {
         isLoading = false;
       });
-      _showSnackBar('Failed to fetch data: ${e.toString()}');
+      _showSnackBar('Failed to fetch data');
     }
   }
 
@@ -587,10 +587,10 @@ class BoardScreenState extends State<BoardScreen> {
                                   _fetchBoardDetailsAndCards();
                                 });
                               } else {
-                                _showSnackBar(result['error']);
+                                _showSnackBar('Failed to delete card');
                               }
                             } catch (e) {
-                              _showSnackBar('Failed to update card status: ${e.toString()}');
+                              _showSnackBar('An error occurred when deleting card');
                             }
                           }),
                     IconButton(icon: Icon(card['status'] == 'BLOCKED' ? Icons.lock_reset : Icons.lock_clock,
@@ -625,10 +625,10 @@ class BoardScreenState extends State<BoardScreen> {
         });
         _showSnackBar('Well done ! Another completed task.');
       } else {
-        _showSnackBar(result['error']);
+        _showSnackBar('Failed to toggled task completion');
       }
     } catch (e) {
-      _showSnackBar('Failed to update card status: ${e.toString()}');
+      _showSnackBar('An error occurred when toggling task completion');
     }
   }
 
@@ -643,7 +643,7 @@ class BoardScreenState extends State<BoardScreen> {
         _fetchBoardDetailsAndCards();
       });
     } catch (e) {
-      _showSnackBar('Failed to update card status: ${e.toString()}');
+      _showSnackBar('An error occurred when toggling/untiling task struggling');
     }
   }
 
@@ -690,10 +690,10 @@ class BoardScreenState extends State<BoardScreen> {
                         _fetchBoardDetailsAndCards();
                       });
                     } else {
-                      _showSnackBar(result['error']);
+                      _showSnackBar('Failed to create/update card');
                     }
                   } catch (e) {
-                    _showSnackBar(e.toString());
+                    _showSnackBar('An error occurred when creating/updating card'); //e.toString()
                   }
                 },
               ),

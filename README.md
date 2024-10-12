@@ -2,34 +2,39 @@
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Prerequisites](#prerequisites)
-3. [Backend Setup](#backend-setup)
+2. [Key Features](#key-features)
+3. [Prerequisites](#prerequisites)
+4. [Backend Setup](#backend-setup)
     - [Python Environment](#python-environment)
     - [Database Configuration](#database-configuration)
     - [Redis Configuration](#redis-configuration)
     - [Django Configuration](#django-configuration)
-4. [Frontend Setup](#frontend-setup)
-5. [Running the Application](#running-the-application)
-6. [Testing](#testing)
-7. [Project Structure](#project-structure)
-8. [Key Features](#key-features)
-9. [Troubleshooting](#troubleshooting)
+5. [Frontend Setup](#frontend-setup)
+6. [Running the Application](#running-the-application)
+7. [Testing](#testing)
+8. [Troubleshooting](#troubleshooting)
+9. [TODO](#todo)
 10. [Contributing](#contributing)
 11. [License](#license)
 
 ## Introduction
 
-This project is a comprehensive project management application featuring a Flutter frontend and a Django REST Framework backend. It offers robust functionalities including user authentication, real-time chat, task management, and workspace organization.
+This project is a comprehensive project management mobile application featuring a Flutter frontend and a Django REST Framework backend with following features:
+- Secure user authentication (JWT-based)
+- User management
+- Interactive projects & tasks management 
+- Kanban-style task board
+- Real-time chat functionality with WebSocket support for collaboration
+- Responsive design for multi-platform support
 
 ## Prerequisites
 
 Ensure you have the following installed on your system:
 
-- Python 3.8 or higher
-- Flutter 3.4.4 or higher
-- MySQL 5.7 or higher
-- Redis 5.0 or higher
-- Node.js 14.0 or higher (for certain frontend dependencies)
+- Python 3.11.2 or higher
+- Flutter 3.24.3 or higher with at least android and another platform
+- Mariadb 15.1 or higher
+- Redis 7.0.15 or higher
 
 ## Backend Setup
 
@@ -51,19 +56,6 @@ Ensure you have the following installed on your system:
    pip install -r requirements.txt
    ```
 
-   If `requirements.txt` is not available, install the following packages manually:
-   ```bash
-   pip install django==3.2.19 \
-               djangorestframework==3.14.0 \
-               django-cors-headers==3.14.0 \
-               channels==3.0.5 \
-               daphne==3.0.2 \
-               mysqlclient==2.1.1 \
-               django-redis==5.2.0 \
-               channels-redis==3.4.1 \
-               djangorestframework-simplejwt==5.2.2 \
-               django-channels-jwt==0.0.4
-   ```
 
 ### Database Configuration
 
@@ -71,8 +63,9 @@ Ensure you have the following installed on your system:
    ```sql
    CREATE DATABASE project_manager_app_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
+2. Create user and grant all privileges to database for him.
 
-2. Update the `DATABASES` configuration in `rest_api/settings.py`:
+3. Update the `DATABASES` configuration in `rest_api/settings.py`:
    ```python
    DATABASES = {
        'default': {
@@ -114,20 +107,16 @@ Ensure you have the following installed on your system:
    python manage.py migrate
    ```
 
-2. Create an admin user:
+2. Create admin users:
    ```bash
    python manage.py createadmin
    ```
 
-3. Create a superuser for API admin access:
+3. Create a superuser for API admin site access:
    ```bash
    python manage.py createsuperuser
    ```
 
-4. Collect static files:
-   ```bash
-   python manage.py collectstatic
-   ```
 
 ## Frontend Setup
 
@@ -151,21 +140,23 @@ Ensure you have the following installed on your system:
 
    The server will start on `http://127.0.0.1:8000`.
 
-2. For production, use a production-grade server like Gunicorn with Nginx.
+2. For production, use a production-grade server like Gunicorn with Nginx and start server on wanted interface
 
 ### Frontend
 
-1. Run the Flutter application:
+1. If running backend server on interface different from loopback, change Api and Websocket URLs in lib/services/api.dart and /lib/services/websocket.dart
+
+2. Choose an Android emulator
+
+3. Run the Flutter application:
    ```bash
    flutter run
    ```
 
-2. Choose your target device (e.g., Android emulator, iOS simulator, or web browser).
-
-3. For production builds:
-    - Android: `flutter build apk --release`
-    - iOS: `flutter build ios --release`
-    - Web: `flutter build web --release`
+4. Choose another platform for chat testing and build
+    - `flutter build linux --release`
+    - `ldd build/linux/x64/release/bundle/project_manager_app`
+    - `chmod +x && build/linux/x64/release/bundle/project_manager_app`
 
 ## Testing
 
@@ -176,10 +167,14 @@ Ensure you have the following installed on your system:
    python manage.py test
    ```
 
-2. Frontend:
-   ```bash
-   flutter test
-   ```
+### Task Management Testing
+1. Build the app on an android or linux platform.
+2. Log in with an admin account.
+3. Test board creation, update and deletion features. Update and delete features are available when long pressing on a board.
+4. Tap on a board to see all related tasks.
+5. Test card operations (creation, update, deletion). User added to a card can see it and also the board which then appears in available chat group list.
+6. Log out and sign in to a non admin account previously added to card members.
+7. Test marking card as finished or blocked/unblocked  
 
 ### Chat Feature Testing
 
@@ -188,58 +183,46 @@ Ensure you have the following installed on your system:
 3. Log in with different user accounts on each device.
 4. Navigate to the chat feature and start a conversation.
 
-## Project Structure
 
-```
-project_root/
-├── backend/
-│   └── rest_api/
-│       ├── api/
-│       │   ├── models.py
-│       │   ├── serializers.py
-│       │   ├── views.py
-│       │   └── urls.py
-│       ├── rest_api/
-│       │   ├── settings.py
-│       │   ├── urls.py
-│       │   └── asgi.py
-│       └── manage.py
-├── lib/
-│   ├── screens/
-│   │   ├── board.dart
-│   │   ├── chat.dart
-│   │   ├── dashboard.dart
-│   │   ├── messages_screen.dart
-│   │   ├── sign_in.dart
-│   │   ├── sign_up.dart
-│   │   ├── welcome_screen.dart
-│   │   └── workspace.dart
-│   ├── services/
-│   │   ├── api.dart
-│   │   ├── navigation.dart
-│   │   └── websocket.dart
-│   └── main.dart
-├── assets/
-│   ├── default_chat_background.png
-│   └── default_photo_profile.jpg
-├── fonts/
-│   ├── Comfortaa-Bold.ttf
-│   ├── Comfortaa-Light.ttf
-│   ├── Comfortaa-Medium.ttf
-│   ├── Comfortaa-Regular.ttf
-│   └── Comfortaa-SemiBold.ttf
-└── pubspec.yaml
-```
+## TODO
 
-## Key Features
+- Enhance UI
+- Add Dark/Light theme schema
+- Add calendar part (day or today and week views) 
+- Add animation when task is finished
+- Add a reward system when task is finished before due date
+- Add workspace (own and invited). Users are admin in their own workspace and simple user for the ones they are invited in.
+- Add events part
+- Add settings 
+- Add OTP for mail confirmation
+- Add call, meeting, voice notes, delivered and read receipts, screen share, file and images messages, stickers.
+- Add private chat with single user of any board or workspace.
+- Add Gantt view for workspace admin.
+- Add intelligent push notification system (alarm, dialog) to make users finish tasks efficiently
+- Add AI to generate content and help in project tasks.
+- Add Settings
+- Add local database to make tasks available offline.
+- Add profile editing.
+- Social network authentication.
+- Biometric authentication.
+- Security controls
+- Project accounting management.
+- Add others platforms and enhance responsive
+- Password reinitialization feature
+- Lost internet connection.
+- Integrate other existing tools (canvas like, google docs, etc.)
+- Message deletion and edition
+- Message encryption.
+- Intelligent progress monitoring.
+- Tests & Deployment.
+- Real-time even in sleep mode.
+- Notification when new task assigned.
+- Cards members displayed for each car; same for board and workspaces members.
+- Restructuring the source code.
+- Timer for focus mode.
+- Daily life tasks integration in own workspace.
+- Subscription modules / changing license constraints.
 
-- Secure user authentication (JWT-based)
-- Interactive project management dashboard
-- Kanban-style task board
-- Real-time chat functionality with WebSocket support
-- Customizable workspace management
-- File sharing and collaboration tools
-- Responsive design for multi-platform support
 
 ## Troubleshooting
 

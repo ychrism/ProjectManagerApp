@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'channels',
     'rest_framework',
     'rest_framework_simplejwt',
-    'django_channels_jwt',
     'api',
     'corsheaders',
     'django.contrib.admin',

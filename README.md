@@ -2,20 +2,19 @@
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Key Features](#key-features)
-3. [Prerequisites](#prerequisites)
-4. [Backend Setup](#backend-setup)
+2. [Prerequisites](#prerequisites)
+3. [Backend Setup](#backend-setup)
     - [Python Environment](#python-environment)
     - [Database Configuration](#database-configuration)
     - [Redis Configuration](#redis-configuration)
     - [Django Configuration](#django-configuration)
-5. [Frontend Setup](#frontend-setup)
-6. [Running the Application](#running-the-application)
-7. [Testing](#testing)
-8. [Troubleshooting](#troubleshooting)
-9. [TODO](#todo)
-10. [Contributing](#contributing)
-11. [License](#license)
+4. [Frontend Setup](#frontend-setup)
+5. [Running the Application](#running-the-application)
+6. [Testing](#testing)
+7. [Troubleshooting](#troubleshooting)
+8. [TODO](#todo)
+9. [Contributing](#contributing)
+10. [License](#license)
 
 ## Introduction
 
@@ -26,6 +25,13 @@ This project is a comprehensive project management mobile application featuring 
 - Kanban-style task board
 - Real-time chat functionality with WebSocket support for collaboration
 - Responsive design for multi-platform support
+
+![](assets/markdown/admins_superuser_creation.png)
+![](assets/markdown/register_new_user.png) ![](assets/markdown/login_simple_user.png) ![](assets/markdown/login_admin.png)
+![](assets/markdown/datetime_picker.png) ![](assets/markdown/create_new_board.png) ![](assets/markdown/update_delete_board_option.png)
+![](assets/markdown/create_new_card.png) ![](assets/markdown/new_card_appeared_for_member.png) ![](assets/markdown/done_card.png)
+![](assets/markdown/new_chat_start.png) ![](assets/markdown/logout.png) ![](assets/markdown/real_time_chat_demo.gif)
+
 
 ## Prerequisites
 
@@ -84,8 +90,8 @@ Ensure you have the following installed on your system:
 
 1. Install and start Redis:
    ```bash
-   sudo apt-get install redis-server  # For Ubuntu
-   sudo systemctl start redis.service
+   sudo apt-get install redis-server  # For Ubuntu/Debian
+   sudo systemctl start redis-server.service
    ```
 
 2. Ensure Redis is running on `localhost:6379`. If using a different configuration, update the `CHANNEL_LAYERS` in `settings.py`:
@@ -146,17 +152,17 @@ Ensure you have the following installed on your system:
 
 1. If running backend server on interface different from loopback, change Api and Websocket URLs in lib/services/api.dart and /lib/services/websocket.dart
 
-2. Choose an Android emulator
+2. Create 2 different android emulators
 
-3. Run the Flutter application:
+3. Start emulators
+   - `flutter emulators --launch <emulator 1 id>`
+   - `flutter emulators --launch <emulator 2 id>`
+
+4. Run the Flutter application:
    ```bash
-   flutter run
+   flutter run -d all
    ```
-
-4. Choose another platform for chat testing and build
-    - `flutter build linux --release`
-    - `ldd build/linux/x64/release/bundle/project_manager_app`
-    - `chmod +x && build/linux/x64/release/bundle/project_manager_app`
+   
 
 ## Testing
 
@@ -168,7 +174,7 @@ Ensure you have the following installed on your system:
    ```
 
 ### Task Management Testing
-1. Build the app on an android or linux platform.
+1. Build the app on and android platform.
 2. Log in with an admin account.
 3. Test board creation, update and deletion features. Update and delete features are available when long pressing on a board.
 4. Tap on a board to see all related tasks.
@@ -226,6 +232,7 @@ Ensure you have the following installed on your system:
 
 ## Troubleshooting
 
+- If updates or messages not rel time, logout and try again.
 - If you encounter CORS issues, ensure the frontend URL is added to `CORS_ALLOWED_ORIGINS` in `settings.py`.
 - For WebSocket connection problems, check if Daphne is running and the WebSocket URL is correct in the frontend code.
 - Database connection issues: Verify MySQL service is running and credentials are correct.

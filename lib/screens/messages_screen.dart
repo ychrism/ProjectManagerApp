@@ -105,19 +105,22 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: NetworkImage(widget.board['pic']),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 10.0),
-                child: Text(
-                  widget.board['name'] as String,
-                  style: const TextStyle(color: Colors.black87, fontSize: 18.0),
+          title: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundImage: NetworkImage(widget.board['pic']),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.only(left: 10.0),
+                  child: Text(
+                    widget.board['name'] as String,
+                    style: const TextStyle(color: Colors.black87, fontSize: 18.0),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             PopupMenuButton(
@@ -280,6 +283,8 @@ class _BoardChatScreenState extends State<BoardChatScreen> {
           Expanded(
             child: TextField(
               controller: _sendMessageController,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 border: OutlineInputBorder(

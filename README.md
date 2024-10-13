@@ -184,10 +184,9 @@ Ensure you have the following installed on your system:
 
 ### Chat Feature Testing
 
-1. Build the app on two separate devices (e.g., Android device and Linux desktop).
-2. Ensure both devices are connected to the same network as the backend server.
-3. Log in with different user accounts on each device.
-4. Navigate to the chat feature and start a conversation.
+1. Ensure both devices are connected to the same network as the backend server.
+2. Log in with different user accounts on each device.
+3. Navigate to the chat feature and start a conversation.
 
 
 ## TODO
